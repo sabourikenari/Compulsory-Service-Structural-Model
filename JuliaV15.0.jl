@@ -1,5 +1,3 @@
-
-
 ##
 using DelimitedFiles
 result = 1.0e50
@@ -72,7 +70,7 @@ using LinearAlgebra
 
 # using Test
 
-using SMTPClient # for sending email
+# using SMTPClient # for sending email
 
 using Distributed
 # Initialize cpu workers for computation
@@ -1099,7 +1097,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     σ1, σ2, σ3, σ4, σ34 ,σ5,
     πE1T1, πE1T2, πE1T3,
     πE2T1, πE2T2, πE2T3,
-    δ, π1T1, π1T2, π1T3, π1T4                 = params
+    π1T1, π1T2, π1T3, π1T4                 = params
 
 
     ######################################################
@@ -1154,6 +1152,8 @@ function estimation(params, choiceMomentData, wageMomentData)
     # the type of input in compile time, but it does not make a trouble fro performance
     # bestResult = readdlm("/home/sabouri/thesis/moments/result.csv") ;
 
+
+    δ = 0.7937395498108646 ;      # discount factor
 
     #*******************************************************
     # check the validity of the input parameters
@@ -1651,7 +1651,7 @@ function estimation(params, choiceMomentData, wageMomentData)
         # writedlm( "/home/sabouri/thesis/moments/data/sim.csv",  sim, ',');
 
         ## Windows ##
-        writedlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
+        # writedlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
 
         # ***************************************************
         # send email after completing the optimization
@@ -1702,12 +1702,12 @@ end
 # choiceMomentData = readdlm("/home/sabouri/thesis/moments/choiceMoment2.csv",',') ;
 
 # code for reading in Linux operating system #
-# wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
-# choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
+wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
+choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
 
 # code for reading in windows operating system #
-wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
-choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
+# wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
+# choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
 
 # reading Moment Data file on Dr. Hosseini computer #
 # wageMomentData = readdlm("C:/Users/Mohammad/Desktop/Moments/wageMoment.csv",',',Float64) ;
@@ -1838,9 +1838,9 @@ params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
         σ1, σ2, σ3, σ4, σ34 ,σ5,
         πE1T1, πE1T2, πE1T3,
         πE2T1, πE2T2, πE2T3,
-        δ, π1T1, π1T2, π1T3, π1T4  ] ;
+        π1T1, π1T2, π1T3, π1T4  ] ;
 
-params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
+# params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
 
 
 
