@@ -352,23 +352,23 @@ end
                     end
                     value= s/length(u1)
                 end
-            # elseif x5 == 1
-            #     s=0.0
-            #     @simd for i in 1:length(u5)
-            #         s+= u5[i]
-            #     end
-            #     value= s/length(u5)
+            elseif x5 == 1
+                s=0.0
+                @simd for i in 1:length(u5)
+                    s+= u5[i]
+                end
+                value= s/length(u5)
             else
                 if educ < 22
                     s=0.0
                     @simd for i in 1:length(u5)
-                        s+= max(u1[i], u2[i], u5[i])
+                        s+= max(u2[i], u5[i])
                     end
                     value= s/length(u5)
                 else
                     s=0.0
                     @simd for i in 1:length(u5)
-                        s+= max(u1[i], u5[i])
+                        s+= max(u5[i])
                     end
                     value= s/length(u5)
                 end
@@ -647,7 +647,7 @@ function simulateType2(α10, α11, α12, α13,
 
     x3Max = 30
     x4Max = 30
-    # col is a dictionary specifying order of 'simresult' for output
+    # simCol is a dictionary specifying order of 'simresult' for output
     simCol = Dict(
         "age"      => 1,
         "educ"     => 2,
@@ -735,13 +735,13 @@ function simulateType2(α10, α11, α12, α13,
                         else
                             utility= [u1, -1e20, u3, u4, -1e20]
                         end#if educ
-                    # elseif x5 == 1
-                    #         utility= [-1e20, -1e20, -1e20, -1e20, u5]
+                    elseif x5 == 1
+                            utility= [-1e20, -1e20, -1e20, -1e20, u5]
                     else
                         if educ < 22
-                            utility= [u1, u2, -1e20, -1e20, u5]
+                            utility= [-1e20, u2, -1e20, -1e20, u5]
                         else
-                            utility= [u1, -1e20, -1e20, -1e20, u5]
+                            utility= [-1e20, -1e20, -1e20, -1e20, u5]
                         end#if educ
                     end#if x5
 
@@ -1138,7 +1138,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     tc1T4 = tc1T1
     α24 = α22
 
-    N = 30 * 1000 ;   # number of individual to simulate their behaviour
+    N = 10 * 1000 ;   # number of individual to simulate their behaviour
 
     # share of each education level at 15 years old
     # levels are 0, 5, 8, 10
@@ -1653,6 +1653,8 @@ function estimation(params, choiceMomentData, wageMomentData)
         ## Windows ##
         # writedlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
 
+        ## Linux ##
+        writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
         # ***************************************************
         # send email after completing the optimization
         # opt = SendOptions(
