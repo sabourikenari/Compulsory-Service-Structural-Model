@@ -1,33 +1,70 @@
-##
+#=***************************************************
+
+The replication code for the follwoing research paper:
+
+ "
+    The Effect of Compulsory Military Service on Education and Income of Men in Iran;
+    A Structural Model Estimation
+ "
+
+Authors:
+    Ehsan Sabouri Kenari
+    Mohammad Hoseini
+
+Contanct us at:
+    ehsansaboori75@gmail.com
+
+****************************************************=#
+
+
+#=
+The codes needed for running on the server
+and also extracting the simulation results from Server
+to my ubuntu operating system.
+=#
+
+# include("/home/sabouri/thesis/code,version11_Parallel.jl")
+# scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/wageMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
+# scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/choiceMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
+
+
+#=
+    Initialize the result on the hard drive
+
+    In the estimation process and in each iteration of optimization,
+    each time that a SMM error is calculated for a specific parameters,
+    it will be compared to the best resul, Then if the result is better than
+    the previous ones, the final result will be replaced and aslo the
+    parameres will be saved.
+
+    Note. this is only for avoiding the loss of results during the optimization
+    due to computer shutdown, error in the code and etc.
+=#
+
 using DelimitedFiles
 result = 1.0e50
 # writedlm("/home/sabouri/thesis/moments/result.csv", result )
 
-# include("/home/sabouri/thesis/code,version11_Parallel.jl")
-#
-# scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/wageMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
-# scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/choiceMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
-#
 
+#################################################################################
+#=
+    Solving dynamic programming
+    Two main groups of individuals:
+    conscription group 1 : Not obligated to attend conscription
+         Alternatives: 4 mutually exclusive choices
+         choice 1 : stay home
+         choice 2 : study
+         choice 3 : white-collar occupation
+         choice 4 : blue-collar occupation
 
-# ################################################################################
-## Solving dynamic programming
-# Two main type of individuals:
-# type 1 : Not obligated to attend conscription
-    # choices: 4 choices
-    # choice 1 : stay home
-    # choice 2 : study
-    # choice 3 : white-collar occupation
-    # choice 4 : blue-collar occupation
-
-# type 2 : obligated to attend conscription
-    # choices: 5 choices
-    # choice 1 : stay home
-    # choice 2 : study
-    # choice 3 : white-collar occupation
-    # choice 4 : blue-collar occupation
-    # choice 5 : compulsory military service
-
+    conscription group 2 : obligated to attend conscription
+         Alternatives: 5 mutually exclusive choices
+         choice 1 : stay home
+         choice 2 : study
+         choice 3 : white-collar occupation
+         choice 4 : blue-collar occupation
+         choice 5 : compulsory military service
+=#
 
 using Pkg
 
@@ -38,26 +75,20 @@ using Random
 using Distributions
 # using LinearAlgebra
 
-# Pkg.add("StatsBase")
 using StatsBase
 
-# Pkg.add("Cubature")
 # using Cubature
 
 using DelimitedFiles
 
-# Pkg.add("NamedArrays");
 using NamedArrays
 
 using Dates
 
-# Pkg.add("Optim")
 using Optim
 
-# Pkg.add("NLopt")
 # using NLopt
 
-# Pkg.add("BlackBoxOptim")
 using BlackBoxOptim
 
 using Distributions
@@ -73,52 +104,55 @@ using LinearAlgebra
 # using SMTPClient # for sending email
 
 using Distributed
-# Initialize cpu workers for computation
+
+#= Initialize cpu workers for computation =#
 addprocs(2)
 println("worker cores are: " , workers())
 
 
 ################################################################################
-# contemporaneous utility function
+#= contemporaneous utility function =#
 
-# utility when choice is stay home
+#= utility when choice is stay home =#
 @everywhere function util1(α10, α11, α12, α13, age, educ, ε1)
     util=  α10 .+ α11*(age <= 19).+ α12*(educ>=13) .+ α13*(age>=30) .+ ε1
     return util
 end
 
-# utility when choice is study
+#= utility when choice is study =#
 @everywhere function util2(α20, α21, tc1, tc2, sl, educ, ε2, age, α30study)
     util= (α20 - α21*(sl == 0)- tc1*(educ>12)- tc2*(educ>16) + α30study*(age>=30) ) .+ ε2
     return util
 end
 
 
-# utility when choice is whitel-collar occupation
+#= utility when choice is whitel-collar occupation =#
 @everywhere function util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, ε3, α22, α23)
     util= (exp.((α30+ α31*educ+ α32*x3+ α33*x4+ α34*(x3^2)+ α35*(x4^2))+ α36*(x3==0)+ α22*(educ>=12)+ α23*(educ>=16).+ ε3) .+ α3)
     return util
 end
 
-# utility when choice is blue-collar occupation
+#= utility when choice is blue-collar occupation =#
 @everywhere function util4(α4, α40, α41, α42, α43, α44, α45, α46, x3, x4, educ, ε4, α24, α25)
     util= (exp.((α40+ α41*educ+ α42*x3+ α43*x4+ α44*(x3^2)+ α45*(x4^2))+ α46*(x4==0)+ α24*(educ>=12)+ α25*(educ>=16).+ ε4) .+ α4)
     return util
 end
 
-# utility when choice is compulsory military service
+#= utility when choice is compulsory military service =#
 @everywhere function util5(α50, α51, α52, educ, ε5)
     util= α50 + α51*(educ>12) + α52*(educ>16) .+ ε5
     return util
 end
 
 ################################################################################
-# Type 1 value function and solve Emax function
-# Type 1: Not obligated to attend conscription
-# value function: given state vector at an age, it denotes the maxiual value
-# at age a over all possible career decisions.
+#=
+    Type 1 value function and solve Emax function
+    Type 1: Not obligated to attend conscription
+    value function: given state vector at an age, it denotes the maxiual value
+    at age a over all possible career decisions.
+=#
 
-# value function for type 1: Not obligated to attent conscription
+#= value function for type 1: Not obligated to attent conscription =#
 @everywhere function valueFunctionType1(α10, α11, α12, α13,
                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                 α3, α30, α31, α32, α33, α34, α35, α36,
@@ -191,7 +225,7 @@ end
 
 
 
-# solve Emax for type 1: Not obligated to attent conscription
+#= solve Emax for conscription group 1: Not obligated to attent conscription =#
 function solveType1(α10, α11, α12, α13,
             α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
             α3, α30, α31, α32, α33, α34, α35, α36,
@@ -201,16 +235,19 @@ function solveType1(α10, α11, α12, α13,
 
     x3Max = 30
     x4Max = 30
-    # pre allocating Emax
-    # Emax function is calcuted until age 17
 
-    # the arguments are in orders:
-    # age(17-65),                                  # 49
-    # education(0-22),                             # 23
-    # school status of last year(0,1),             # 2
-    # years of experience in white-collar(0-30),   # 31
-    # years of experience in blue-collar(0-30),    # 31
-    # Stata space size= 49*23*2*31*31=           2,166,094
+    #=
+    Pre-allocating Emax
+    Emax function is calcuted until age 17
+
+    The arguments are in orders:
+        age(17-65),                                  # 49
+        education(0-22),                             # 23
+        school status of last year(0,1),             # 2
+        years of experience in white-collar(0-30),   # 31
+        years of experience in blue-collar(0-30),    # 31
+    State space size= 49*23*2*31*31=           2,166,094
+    =#
 
     Emax= SharedArray{Float64,5}(49, 23, 2, x3Max+1, x4Max+1);
 
@@ -277,11 +314,12 @@ end
 
 
 ################################################################################
-# Type 2 value function and solve Emax function
-# Type 2: obligated to attend conscription
+#=
+conscription goup 2 value function and solve Emax function
+conscription goup 2: obligated to attend conscription
+=#
 
-
-# value function for type 2: obligated to attend conscription
+#= value function for conscription goup 2: obligated to attend conscription =#
 @everywhere function valueFunctionType2(α10, α11, α12, α13,
                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                 α3, α30, α31, α32, α33, α34, α35, α36,
@@ -328,7 +366,7 @@ end
         end
     else
 
-        # assume that maximum years of experience is 30 years.
+        #= assume that maximum years of experience is 30 years. =#
         u1= u1 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1         ]
         u2= u3 .+ δ*Emax[age-16+1 ,educ+1+1*(educ!=22),1+1 ,x3+1           ,x4+1           ,x5+1         ]
         u3= u3 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1+1*(x3!=x3Max),x4+1           ,x5+1         ]
@@ -387,7 +425,7 @@ end
 
 
 
-# solve Emax for type 2: obligated to attent conscription
+#= Solve Emax for conscription goup 2: obligated to attent conscription =#
 function solveType2(α10, α11, α12, α13,
             α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
             α3, α30, α31, α32, α33, α34, α35, α36,
@@ -398,18 +436,19 @@ function solveType2(α10, α11, α12, α13,
 
     x3Max = 30
     x4Max = 30
-    # pre allocating Emax
-    # Emax function is calcuted until age 17
+    #=
+    Pre-allocating Emax
+    Emax function is calcuted until age 17
 
-    # the arguments are in orders:
-    # age(17-65),                                  # 49
-    # education(0-22),                             # 23
-    # school status of last year(0,1),             # 2
-    # years of experience in white-collar(0-30),   # 31
-    # years of experience in blue-collar(0-30),    # 31
-    # years attending conscription(0,1,2)          # 3
-    # Stata space size= 49*23*2*31*31*3=         6,498,282
-
+    The arguments are in orders:
+        age(17-65),                                  # 49
+        education(0-22),                             # 23
+        school status of last year(0,1),             # 2
+        years of experience in white-collar(0-30),   # 31
+        years of experience in blue-collar(0-30),    # 31
+        years attending conscription(0,1,2)          # 3
+    Stata space size= 49*23*2*31*31*3=         6,498,282
+    =#
     Emax= SharedArray{Float64,6}(49, 23, 2, x3Max+1, x4Max+1, 3);
 
 
@@ -481,7 +520,7 @@ end#
 
 
 ################################################################################
-# simulate Type 1
+#= simulate conscription goup 1 =#
 
 function simulateType1(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
@@ -493,7 +532,7 @@ function simulateType1(α10, α11, α12, α13,
 
     x3Max = 30
     x4Max = 30
-    # col is a dictionary specifying order of 'simresult' for output
+    #= simCol is a dictionary specifying order of 'simresult' for output =#
     simCol = Dict(
         "age"      => 1,
         "educ"     => 2,
@@ -506,14 +545,14 @@ function simulateType1(α10, α11, α12, α13,
         "type"     => 9,
         "Emax"     => 10
     );
-    # pre-allocating each person-year's state
+    #= Pre-allocating each person-year's state=#
     sim = Array{Float64, 2}(undef, (N*50, 10))
     sim[:,simCol["x5"]] .= NaN
 
-    # education distribution in age 16 of people:
+    #= education distribution in age 16 of people: =#
     educLevel = [0    ,5    ,8    ,10  ]
     # weights =   [0.02 ,0.20 ,0.24 ,0.54]
-    # drawing educ level exogenously form this distribution
+    #= drawing educ level exogenously form this distribution =#
     a = sample(MersenneTwister(Seed),educLevel, Weights(weights), N)
 
 
@@ -537,7 +576,7 @@ function simulateType1(α10, α11, α12, α13,
                 x3=0
                 x4=0
                 educ=a[id]
-                sl= 1#0+1*(educ==10)+1*(educ==8)
+                sl= 1 #0+1*(educ==10)+1*(educ==8)
             else
                 x3  = convert(Int,sim[index-1,simCol["x3"]])
                 x4  = convert(Int,sim[index-1,simCol["x4"]])
@@ -545,10 +584,10 @@ function simulateType1(α10, α11, α12, α13,
                 sl  =1*(sim[index-1,simCol["choice"]] == 2)
             end
 
-            # four shocks to person i in age 'age':
+            #= four shocks to person i in age 'age': =#
             ε1,ε2,ε3,ε4= epsestimation[ : , index]
 
-            # comtemporaneous utility from each decision :
+            #= comtemporaneous utility from each decision : =#
             u1= util1(α10, α11, α12, α13, age, educ, ε1)
             u2= util2(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
             u3= util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, ε3, α22, α23)
@@ -580,10 +619,10 @@ function simulateType1(α10, α11, α12, α13,
                 maxUtility = maximum(utility)
             end
 
-            # writing 'choice' in results
+            #= writing 'choice' in results =#
             sim[index, simCol["choice"]] = choice
 
-            # specifying subsequent period state based on 'choice' of this period
+            #= specifying subsequent period state based on 'choice' of this period =#
             if     choice==1
                 sim[index, simCol["income"]]= NaN
                 sim[index, simCol["x3"]]    = x3
@@ -612,8 +651,10 @@ function simulateType1(α10, α11, α12, α13,
             end
             sim[index, simCol["Emax"]] = maxUtility #utility[choice]
 
-            # specifying if persion is educated or not (educ > 12 or not)
-            # this helps in calculating moment conditions from simulated data
+            #=
+            specifying if persion is educated or not (educ > 12 or not)
+            this helps in calculating moment conditions from simulated data
+            =#
             if choice == 2
                 educ = educ + 1
             end
@@ -635,7 +676,7 @@ function simulateType1(α10, α11, α12, α13,
 end#simulate
 
 ################################################################################
-# simulate Type 2
+#= simulate conscription goup 2 =#
 
 function simulateType2(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
@@ -647,7 +688,7 @@ function simulateType2(α10, α11, α12, α13,
 
     x3Max = 30
     x4Max = 30
-    # simCol is a dictionary specifying order of 'simresult' for output
+    #= simCol is a dictionary specifying order of 'simresult' for output =#
     simCol = Dict(
         "age"      => 1,
         "educ"     => 2,
@@ -660,10 +701,10 @@ function simulateType2(α10, α11, α12, α13,
         "type"     => 9,
         "Emax"     => 10
     );
-    # pre-allocating each person-year's state
+    #= Pre-allocating each person-year's state =#
     sim = Array{Float64, 2}(undef, (N*50, 10))
 
-    # education distribution in age 16 of people:
+    #= education distribution in age 16 of people: =#
     educLevel = [0    ,5    ,8    ,10  ]
     # weights =   [0.02 ,0.20 ,0.24 ,0.54]
     # drawing educ level exogenously form this distribution
@@ -700,10 +741,10 @@ function simulateType2(α10, α11, α12, α13,
                 x5   = convert(Int, sim[index-1,simCol["x5"]])
             end
 
-            # four shocks to person i in age 'age':
+            #= four shocks to person i in age 'age': =#
             ε1, ε2, ε3, ε4, ε5 = epsestimation[:, index]
 
-            # comtemporaneous utility from each decision :
+            #= comtemporaneous utility from each decision : =#
             u1= util1(α10, α11, α12, α13, age, educ, ε1)
             u2= util2(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
             u3= util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, ε3, α22, α23)
@@ -755,10 +796,10 @@ function simulateType2(α10, α11, α12, α13,
             end
 
 
-            # writing 'choice' in results
+            #= writing 'choice' in results =#
             sim[index, simCol["choice"]] = choice
 
-            # specifying subsequent period state based on 'choice' of this period
+            #= specifying subsequent period state based on 'choice' of this period =#
             if     choice==1
                 sim[index, simCol["income"]]= NaN
                 sim[index, simCol["x3"]]    = x3
@@ -797,8 +838,10 @@ function simulateType2(α10, α11, α12, α13,
             end
             sim[index, simCol["Emax"]] = maxUtility #utility[choice]
 
-            # specifying if persion is educated or not (educ > 12 or not)
-            # this helps in calculating moment conditions from simulated data
+            #=
+             specifying if persion is educated or not (educ > 12 or not)
+             this helps in calculating moment conditions from simulated data
+            =#
             if choice == 2
                 educ = educ + 1
             end
@@ -821,10 +864,11 @@ end#simulate
 
 
 ################################################################################
-## Define SMMCalculate :
-# it takes moment from data and model Estimation
-# and calculate the error
-
+#=
+    Define SMMCalculate :
+    It takes moment from data and model Estimation
+    and calculate the error
+=#
 function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
 
@@ -852,9 +896,11 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         #     error = error*2
         # end
 
-        # if error is NaN, it means no one is working in that occupation, thus we
-        # make this error bigger to force the optimization algorithm to avoid
-        # from this area of paramater's domain.
+        #=
+        If error is NaN, it means no one is working in that occupation, thus we
+        make this error bigger to force the optimization algorithm to avoid
+        from this area of paramater's domain.
+        =#
         if isnan(error)
             error = 10.0
         end
@@ -872,7 +918,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         end
 
 
-        # percentage error of mean income standard deviation
+        #= percentage error of mean income standard deviation =#
         error = (
             (
                 wageMoment[i, wageCol["devData"]] -wageMoment[i, wageCol["devSim"]]
@@ -903,7 +949,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
     for i in 1:size(choiceMoment,1)
 
-        # choice 1: home production
+        #= choice 1: home production =#
         error = (
             (
                 choiceMoment[i, choiceCol["homeData"]] -
@@ -927,7 +973,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
         homeError += error^2
 
-        # choice 2: study
+        #= choice 2: study =#
         error = (
             (
                 choiceMoment[i, choiceCol["studyData"]] -
@@ -952,7 +998,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
         studyError += error^2
 
-        # choice 3: white-collar occupation
+        #= choice 3: white-collar occupation =#
         error = (
             (
                 choiceMoment[i, choiceCol["whiteData"]] -
@@ -984,7 +1030,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
         whiteError += error^2
 
-        # choice 4: blue-collar occupation
+        #= choice 4: blue-collar occupation =#
         error = (
             (
                 choiceMoment[i, choiceCol["blueData"]] -
@@ -1010,7 +1056,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
         blueError += error^2
 
-        # choice 5: compulsory military service
+        #= choice 5: compulsory military service =#
         error = (
             (
                 choiceMoment[i, choiceCol["milData"]] -
@@ -1035,7 +1081,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
     end
 
 
-    ## printing each error seperately ##
+    #= Printing each error seperately =#
     # print("\n wageWhiteError  = ", wageWhiteError)
     # print("\n wageBlueError   = ", wageBlueError )
     # print("\n homeError       = ", homeError     )
@@ -1047,8 +1093,10 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
     # print("\n devBlueError    = ", devBlueError  )
 
 
-    ## shift the error term when estimation is going to areas of parameters
-    ## where no one employ in white-collar or blue-occupation
+    #=
+    Shift the error term when estimation is going to areas of parameters
+    where no one employ in white-collar or blue-occupation
+    =#
     if wageWhiteError == 0.0
         wageWhiteError = 1000.0
     end
@@ -1063,7 +1111,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
     # end
 
 
-    ## total error ##
+    #= total error =#
     SMMError = (
         wageWhiteError +
         wageBlueError +
@@ -1080,13 +1128,13 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 end
 
 ################################################################################
-# Define estimation Function
+#= Define estimation Function =#
 
 function estimation(params, choiceMomentData, wageMomentData)
 
 
-    #*******************************************************
-    # parameters
+    #=****************************************************=#
+    #= parameters =#
 
     ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
     ω2T1, ω2T2, ω2T3, ω2T4,
@@ -1100,8 +1148,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     π1T1, π1T2, π1T3, π1T4                 = params
 
 
-    ######################################################
-    ######################################################
+    #=****************************************************=#
     α21 = exp(α21)
     tc1T1 = exp(tc1T1)
     tc2 = exp(tc2)
@@ -1117,8 +1164,10 @@ function estimation(params, choiceMomentData, wageMomentData)
     α13 = -exp(-α13)
     α30study = -exp(-α30study)
 
-    # some parameters are passed in logarithm scale, this is just for
-    #   easier interpreting them.
+    #=
+    Some parameters are passed in logarithm scale, this is just for
+    easier interpreting them.
+    =#
     ω1T1 = exp(ω1T1)  ;   # the intercept of staying home α10 for type 1
     ω1T2 = exp(ω1T2)  ;   # the intercept of staying home α10 for type 2
     ω1T3 = exp(ω1T3)  ;   # the intercept of staying home α10 for type 3
@@ -1131,7 +1180,8 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     α4 = 0.0  ;  # non pecuniary utility of blue-collar asssumed zero
     # π1 = 0.78 ;  # share of individuals type 1
-    # entry cost of without experience
+
+    #= entry cost of without experience =#
     α36, α46 = 0.0 , 0.0 ;
     tc1T2 = tc1T1
     tc1T3 = tc1T1
@@ -1140,26 +1190,25 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     N = 10 * 1000 ;   # number of individual to simulate their behaviour
 
-    # share of each education level at 15 years old
+    #= share of each education level at 15 years old =#
     # levels are 0, 5, 8, 10
     educShare =   [0.019 ,0.198 ,0.241 ,0.542]
     # educShare =   [0.023 ,0.138 ,0.185 ,0.654]
 
-    # save the result in a text file
-    # this helps when the optimization is running on the server
-    # to catch the best candidater through run time easily
-    # however it makes a little inconsistecy, because Julia can not understand
-    # the type of input in compile time, but it does not make a trouble fro performance
+    #=
+    Save the result in a text file
+    this helps when the optimization is running on the server
+    to catch the best candidater through run time easily
+    however it makes a little inconsistecy, because Julia can not understand
+    the type of input in compile time, but it does not make a trouble fro performance
+    =#
     # bestResult = readdlm("/home/sabouri/thesis/moments/result.csv") ;
 
 
     δ = 0.7937395498108646 ;      # discount factor
 
-    #*******************************************************
-    # check the validity of the input parameters
-    # if (π1 > 1) | (π1 < 0)
-    #     return 1e4
-    # end
+    #=****************************************************=#
+    #= check the validity of the input parameters =#
     if (δ > 1) | (δ < 0)
         return 1e4
     end
@@ -1191,17 +1240,18 @@ function estimation(params, choiceMomentData, wageMomentData)
 
 
 
-    #*******************************************************
-    # solve the model
+    #=****************************************************=#
+    #= solve the model =#
     M = 200
-    ###### Type 1 #####
+
+    #=     conscription goup 1     =#
     epsSolveMeanType1= [0.0, 0.0, 0.0, 0.0]
     epsSolveσType1= [ σ1   0.0  0.0   0.0 ;
                       0.0  σ2   0.0   0.0 ;
                       0.0  0.0  σ3    σ34 ;
                       0.0  0.0  σ34   σ4  ]
 
-    # check if the variance-covariance matrix is valid:
+    #= check if the variance-covariance matrix is valid =#
     if !isposdef(epsSolveσType1)
         return 1e4
     end
@@ -1238,7 +1288,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                 epssolveType1)
 
 
-    ###### Type 2 ######
+    #=     conscription goup 2     =#
     epsSolveMeanType2= [0.0, 0.0, 0.0, 0.0, 0.0] ;
     epsSolveσType2=[σ1   0.0  0.0  0.0  0.0 ;
                     0.0  σ2   0.0  0.0  0.0 ;
@@ -1246,7 +1296,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                     0.0  0.0  σ34  σ4   0.0 ;
                     0.0  0.0  0.0  0.0  σ5  ] ;
 
-    # check if the variance-covariance matrix is valid:
+    #= check if the variance-covariance matrix is valid =#
     if !isposdef(epsSolveσType2)
         return 1e4
     end
@@ -1288,10 +1338,11 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     Emax = [EmaxType1T1,EmaxType1T2,EmaxType1T3,EmaxType1T4
             ,EmaxType2T1,EmaxType2T2,EmaxType2T3,EmaxType2T4]
-    #*******************************************************
-    # simulate the model
 
-    # each column of simulated data is as follows:
+    #=****************************************************=#
+    #= simulate the model =#
+
+    #= each column of simulated data is as follows: =#
     simCol = Dict(
         "age"      => 1,
         "educ"     => 2,
@@ -1314,7 +1365,6 @@ function estimation(params, choiceMomentData, wageMomentData)
     E1T2 = convert(Int, round(πE1T2*E1))
     E1T3 = convert(Int, round(πE1T3*E1))
     E1T4 = E1 - E1T1 - E1T2 - E1T3
-    # print("sssssss",E1T1," ",E1T2," ",E1T3," ",E1T4)
 
     E2 = convert(Int, round(educShare[2]*N))
     E2T1 = convert(Int, round(πE1T1*E2))
@@ -1402,7 +1452,7 @@ function estimation(params, choiceMomentData, wageMomentData)
         E3T4*1.0,
         E4T4*1.0
     ]
-    # print("\nssss",weightsT4)
+
     NType1T4 = convert(Int, round(sum(weightsT4) * π1T4))
     if NType1T4 > 0
         simType1T4= simulateType1(ω1T4, α11, α12, α13,
@@ -1476,19 +1526,21 @@ function estimation(params, choiceMomentData, wageMomentData)
     end
 
 
-    ## concatenate two simulation ##
+    #= Concatenate two simulation =#
     sim = [simType1T1; simType1T2; simType1T3; simType1T4;
            simType2T1; simType2T2; simType2T3; simType2T4 ] ;
 
 
-    #*******************************************************
-    # calculating moment from simulation
-    # we build some arrays to put data moment and model moment aside
+    #=****************************************************=#
+    #=
+    Calculating moment from simulation
+    we build some arrays to put data moment and model moment aside
 
-    # generating an Array named wageMoment
-    # to store average income of the simulated moments
-    # also we embed data moment in this array
-    # wageMomentData is the given wage moment from data
+    generating an Array named wageMoment
+    to store average income of the simulated moments
+    also we embed data moment in this array
+    wageMomentData is the given wage moment from data
+    =#
     wageMoment= Array{Float64,2}(undef, (size(wageMomentData,1),7))
     wageCol = Dict(
         "age"         => 1,
@@ -1501,11 +1553,12 @@ function estimation(params, choiceMomentData, wageMomentData)
     )
     wageMoment[:,1:5]= wageMomentData[:,1:5];
 
-
-    # generating an Array named choiceMoment
-    # to store simulated share of alternatives
-    # also we embed data moment in this array
-    # dhoiceMomentData is the given alternative share moment from data
+    #=
+    generating an Array named choiceMoment
+    to store simulated share of alternatives
+    also we embed data moment in this array
+    choiceMomentData is the given alternative share moment from data
+    =#
     choiceMoment= Array{Float64,2}(undef, (size(choiceMomentData,1),12) )
     choiceCol = Dict(
         "age"       => 1,
@@ -1523,38 +1576,41 @@ function estimation(params, choiceMomentData, wageMomentData)
     )
     choiceMoment[ :, 1:7] =choiceMomentData[: ,1:7]
 
-
-    # removing share below 1 percent for two reason:
-    # it is not informative about distribution of choices
-    # also increases the error of coumputation daramatically large if they remain
+    #=
+    removing share below 1 percent for two reason:
+    it is not informative about distribution of choices
+    also increases the error of coumputation daramatically large if they remain
+    =#
     for i in 3:6
         choiceMoment[(choiceMoment[:,i].<0.01) ,i] .= NaN
     end
 
-    #*******************************************************
-    # sim is simulation of N people behaviour
-    # here we update data moment conditio
-
+    #=****************************************************=#
+    #=
+    sim is simulation of N people behaviour
+    here we update data moment conditio
+    =#
     ageInterval= unique(choiceMoment[:,choiceCol["age"]])
     ageMax= maximum(ageInterval)
 
     for age in ageInterval
 
-        ## mean income for each occupation moment condition ##
+        #= mean income for each occupation moment condition =#
 
         for educated in unique(wageMoment[ wageMoment[:,wageCol["age"]].== age , wageCol["educated"] ])
             for collar in unique(wageMoment[ wageMoment[:,wageCol["age"]].== age , wageCol["collar"] ])
 
-                # amendment
+                #= amendment =#
                 if age < 22
                     educated = -1
                 end
-
-                # mapping each collar code to choice alternative in the model
-                # in the file working with data, we defined:
-                # colar 0 : white-collar occupation
-                # colar 1 : blure-collar occupation
-                # colar 2 : compulsory military service
+                #=
+                mapping each collar code to choice alternative in the model
+                in the file working with data, we defined:
+                colar 0 : white-collar occupation
+                colar 1 : blure-collar occupation
+                colar 2 : compulsory military service
+                =#
                 if collar == 0
                     choice= 3
                 elseif collar==1
@@ -1586,7 +1642,7 @@ function estimation(params, choiceMomentData, wageMomentData)
         end #for educated
 
 
-        ## share of each alternative moment conditions ##
+        #= share of each alternative moment conditions =#
 
         for educated in
             convert.(
@@ -1619,14 +1675,18 @@ function estimation(params, choiceMomentData, wageMomentData)
     # end
 
 
-    #*******************************************************
-    # calculating error = sum squared of percentage distance
-    # between data moment and moment from model simulation
+    #=****************************************************=#
+    #=
+    calculating error = sum squared of percentage distance
+    between data moment and moment from model simulation
+    =#
     result = SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
 
 
-    # Putting all moment in a vector for calculating jacobian of
-    # the moment by changing parameters
+    #=
+    Putting all moment in a vector for calculating jacobian of
+    the moment by changing parameters
+    =#
     momentSim = [wageMoment[:,6] ; wageMoment[:,7]]
 
     for i = 8:12
@@ -1641,7 +1701,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     moment = momentSim-momentData # (momentSim-momentData)./momentData
 
 
-    #**************************
+    #=****************************************************=#
     if result < 1e4 #bestResult[1]
         ## Server ##
         # writedlm("/home/sabouri/thesis/moments/result.csv", result , ',') ;
@@ -1676,7 +1736,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     end
 
 
-    ## return smm error calculated ##
+    #= return SMM error calculated =#
     print("\n SMM error = ", result, " ")
     return result, moment, momentData #, choiceMoment, wageMoment, sim
 end
@@ -1697,21 +1757,21 @@ end
 
 
 ################################################################################
-# read data moment files
+#= read data moment files =#
 
-# code for reading in server #
+#= code for reading in server =#
 # wageMomentData= readdlm("/home/sabouri/thesis/moments/wageMoment2.csv",',')      ;
 # choiceMomentData = readdlm("/home/sabouri/thesis/moments/choiceMoment2.csv",',') ;
 
-# code for reading in Linux operating system #
+#= code for reading in Linux operating system =#
 wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
 choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
 
-# code for reading in windows operating system #
+#= code for reading in windows operating system =#
 # wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
 # choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
 
-# reading Moment Data file on Dr. Hosseini computer #
+#= reading Moment Data file on Dr. Hosseini computer =#
 # wageMomentData = readdlm("C:/Users/Mohammad/Desktop/Moments/wageMoment.csv",',',Float64) ;
 # choiceMomentData = readdlm("C:/Users/Mohammad/Desktop/Moments/choiceMoment.csv",',') ;
 
@@ -1719,11 +1779,8 @@ choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment
 
 
 ###############################################################################
-# Final Results
 
-
-#*******************************************************************************
-## Initial parameters
+#= Initial parameters =#
 
 # parameters in the utility functions
 #**********************
@@ -1753,27 +1810,27 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 
 
 #**********************
-# occupational choices: 3=white, 4=blue collar
+#= occupational choices: 3=white, 4=blue collar =#
 α3, α4 = log(2.912102156105642e6)   , 0 ;          # the intercept outside exp()
 
-# the intercept inside exp() for type 1
+#= the intercept inside exp() for type 1 =#
 ω3T1, ω4T1 = 14.923587474508264   , 16.68237380204532    ;
-# the intercept inside exp() for type 2
+#= the intercept inside exp() for type 2 =#
 ω3T2, ω4T2 = 14.36700982271307   , 15.993043719456187   ;
-# the intercept inside exp() for type 3
+#= the intercept inside exp() for type 3 =#
 ω3T3, ω4T3 = 15.149554695776371   , 16.341533053640374   ;
-# the intercept inside exp() for type 4
+#= the intercept inside exp() for type 4 =#
 ω3T4, ω4T4 = 15.081354895531176   , 16.736029404970487   ;
 
 
 #**********************
-# share of each type for those education less than 10 in 15 years old
+#= share of each type for those education less than 10 in 15 years old =#
 πE1T1 = 0.7229226597006355
 πE1T2 = 0.200245804890741
 πE1T3 = 0.05042791889785734
 # πE1T4 = 1- πE1T1- πE1T2- πE1T3
 
-# share of each type for those education equalls 10 in 15 years old
+#= share of each type for those education equalls 10 in 15 years old =#
 πE2T1 = 0.532182272493524
 πE2T2 = 0.21200626083052643
 πE2T3 = 0.1216150006037918
@@ -1781,18 +1838,18 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 
 
 #**********************
-# education coefficients
+#= education coefficients =#
 α31, α41 =  0.13314223937325274 , 0.05543705296821224 ;
-# experience in white collar
+#= experience in white collar =#
 α32, α42 = 0.09101988190579493 , 0.02939220222274944 ;
-# experience in blue collar
+#= experience in blue collar =#
 α33, α43 = 0.0200014722980203 , 0.1129179772059813 ;
-# experience^2 in white collar
+#= experience^2 in white collar =#
 α34, α44 = -0.0019514727935415903 ,-0.0021253464755022385 ;
-# experience^2 in blue collar
+#= experience^2 in blue collar =#
 α35, α45 = -0.003269082102255282 , -0.002950986951463705 ;
 
-# entry cost of without experience
+#= entry cost of without experience =#
 # α36, α46 = 0.0 , 0.0 ;
 
 #**********************
@@ -1801,7 +1858,7 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 α52 = log(3.117584747501996e6) ;     # util5 coeff for if educ >= 16
 
 #**********************
-# Variance-covariance of shocks
+#= Variance-covariance of shocks =#
 σ1 = log(5.38353612340567e14) ;  # variance of ε1 - staying home
 σ2 = log(3.801914530676497e13) ;  # variance of ε2 - studying
 σ3 = 0.4980352741234879 ;    # variance of ε3 - white collar
@@ -1818,7 +1875,7 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 
 δ = 0.7937395498108646 ;      # discount factor
 
-# New parameters in the model
+#= New parameters in the model =#
 α11 = -log(6.2705530131153148e6)  # if age<=18
 α12 = log(1.38e7)                # if educ >=13
 α13 = -log(8.22e6)                # if age>=30
@@ -1873,39 +1930,39 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 
 ## ##############################################################################
-# Optimization ##
+#= Optimization =#
 
 println("\n \n \n \n")
 println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 
 #**********************************************
-# NLopt.jl #
-# specifying algorithm and number of parameters
+# #= NLopt.jl =#
+# #= specifying algorithm and number of parameters =#
 # opt = NLopt.Opt(:LN_NELDERMEAD, 28)
 #
-# # specifying objective functiom
+# #= specifying objective functiom =#
 # opt.min_objective = estimation
 #
-# # specifying upper and lower bounds of parameters
+# #= specifying upper and lower bounds of parameters =#
 # opt.lower_bounds = paramsLower
 # opt.upper_bounds = paramsUpper
 #
-# # optimization stupping creiteria
+# #= optimization stupping creiteria =#
 # opt.ftol_rel = 0.01
 # # apt.stopval = 10.0
 # # apt.maxeval = 2000
 #
-# # start the optimizatiom
+# #= start the optimizatiom =#
 # (optf,optx,ret) = NLopt.optimize(opt, params)
 #
-# # writting the output
+# #= writting the output =#
 # numevals = apt.numevals
 # println("got $optf at $optx after $numevals iterations (returned $ret)")
 
 
 # **********************************************
-# Otpim.jl #
-# older optimization code with Optim package #
+#= Otpim.jl =#
+#= older optimization code with Optim package =#
 optimization = Optim.optimize(
                 x -> estimation(x, choiceMomentData, wageMomentData)[1]
                 ,params
@@ -1921,8 +1978,8 @@ println(optimization)
 println(Optim.minimizer(optimization))
 
 
-# # #**********************************************
-# # # BlackBoxOptim.jl ##
+#=**********************************************=#
+# #= BlackBoxOptim.jl =#
 # bounds = [(i*1.0,i*1.0) for i in 1:22]
 # # for i in 1:28
 # #     bounds[i] = (paramsLower[i], paramsUpper[i])
@@ -1954,7 +2011,7 @@ println(Optim.minimizer(optimization))
 #
 #
 #
-# # showing when optimization finished #
+# #= showing when optimization finished =#
 # println("stop at = " ,Dates.format(now(), "HH:MM"))
 
 
@@ -1963,7 +2020,7 @@ println(Optim.minimizer(optimization))
 
 
 ################################################################################
-# # estimating standard error's of the model parameters ##
+# #= estimating standard error's of the model parameters =#
 #
 # # Pkg.add("ForwardDiff")
 # # using ForwardDiff
@@ -2024,7 +2081,7 @@ error = transpose(jac) * W * jac ;
 
 
 # ***************************************************
-# send email after completing the optimization
+#= send email after completing the optimization =#
 opt = SendOptions(
   isSSL = true,
   username = "juliacodeserver@gmail.com",
@@ -2052,7 +2109,7 @@ resp = send(url, rcpt, from, body, opt)
 
 
 ##############################################################
-# # ploting the output
+# #= ploting the output =#
 #
 # # Pkg.add("Plots")
 # using Plots
