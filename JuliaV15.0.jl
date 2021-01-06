@@ -43,8 +43,9 @@
 
 using DelimitedFiles
 result = 1.0e50
-# writedlm("/home/sabouri/thesis/moments/result.csv", result )
-
+if ENV["USER"] == "sabouri"
+    writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result )
+end
 
 #################################################################################
 #=
@@ -106,7 +107,11 @@ using LinearAlgebra
 using Distributed
 
 #= Initialize cpu workers for computation =#
-addprocs(2)
+if ENV["USER"] == "sabouri"
+    addprocs(4)
+elseif ENV["USER"] == "ehsan"
+    addprocs(2)
+end
 println("worker cores are: " , workers())
 
 
@@ -1242,8 +1247,9 @@ function estimation(params, choiceMomentData, wageMomentData)
     however it makes a little inconsistecy, because Julia can not understand
     the type of input in compile time, but it does not make a trouble fro performance
     =#
-    # bestResult = readdlm("/home/sabouri/thesis/moments/result.csv") ;
-
+    if ENV["USER"] == "sabouri"
+        bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
+    end
 
     δ = 0.7937395498108646 ;      # discount factor
 
@@ -1282,7 +1288,7 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     #=****************************************************=#
     #= solve the model =#
-    M = 100 #200
+    M = 140 #200
 
     #=     conscription goup 1     =#
     epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0]
@@ -1742,19 +1748,22 @@ function estimation(params, choiceMomentData, wageMomentData)
 
 
     #=****************************************************=#
-    if result < 1e4 #bestResult[1]
+    if ENV["USER"] == "ehsan"
+        ## Linux ##
+        writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
+    end
+    if ENV["USER"]=="sabouri"
+        if (result < bestResult[1])
         ## Server ##
-        # writedlm("/home/sabouri/thesis/moments/result.csv", result , ',') ;
-        # writedlm("/home/sabouri/thesis/moments/parameters.csv", params , ',') ;
-        # writedlm( "/home/sabouri/thesis/moments/data/choiceMoment.csv",  choiceMoment, ',');
-        # writedlm( "/home/sabouri/thesis/moments/data/wageMoment.csv",  wageMoment, ',');
-        # writedlm( "/home/sabouri/thesis/moments/data/sim.csv",  sim, ',');
+        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',') ;
+        writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
+        # writedlm( "/home/sabouri/Labor/CodeOutput/choiceMoment.csv",  choiceMoment, ',');
+        # writedlm( "/home/sabouri/Labor/CodeOutput/wageMoment.csv",  wageMoment, ',');
+        writedlm( "/home/sabouri/Labor/CodeOutput/sim.csv",  sim, ',');
 
         ## Windows ##
         # writedlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
 
-        ## Linux ##
-        writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
         # ***************************************************
         # send email after completing the optimization
         # opt = SendOptions(
@@ -1773,6 +1782,7 @@ function estimation(params, choiceMomentData, wageMomentData)
         # rcpt = ["<ehsansaboori75@gmail.com>"]
         # from = "<juliacodeserver@gmail.com>"
         # resp = send(url, rcpt, from, body, opt)
+        end
     end
 
 
@@ -1800,17 +1810,20 @@ end
 #= read data moment files =#
 
 #= code for reading in server =#
-# wageMomentData= readdlm("/home/sabouri/thesis/moments/wageMoment2.csv",',')      ;
-# choiceMomentData = readdlm("/home/sabouri/thesis/moments/choiceMoment2.csv",',') ;
-
+if ENV["USER"] == "sabouri"
+    wageMomentData= readdlm("/home/sabouri/Labor/DataMoments/wageMoment2.csv",',')      ;
+    choiceMomentData = readdlm("/home/sabouri/Labor/DataMoments/choiceMoment2.csv",',') ;
+end
 #= code for reading in Linux operating system =#
-wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
-choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
-
+if ENV["USER"] == "ehsan"
+    wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
+    choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
+end
 #= code for reading in windows operating system =#
-# wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
-# choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
-
+if ENV["USER"] == "claudiq"
+    wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
+    choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
+end
 #= reading Moment Data file on Dr. Hosseini computer =#
 # wageMomentData = readdlm("C:/Users/Mohammad/Desktop/Moments/wageMoment.csv",',',Float64) ;
 # choiceMomentData = readdlm("C:/Users/Mohammad/Desktop/Moments/choiceMoment.csv",',') ;
@@ -1972,10 +1985,10 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 ## ##############################################################################
 #= Optimization =#
 
-println("\n \n \n \n")
-println("optimization started at = " ,Dates.format(now(), "HH:MM"))
+# println("\n \n \n \n")
+# println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 
-#**********************************************
+#=**********************************************=#
 # #= NLopt.jl =#
 # #= specifying algorithm and number of parameters =#
 # opt = NLopt.Opt(:LN_NELDERMEAD, 28)
@@ -2000,22 +2013,22 @@ println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 # println("got $optf at $optx after $numevals iterations (returned $ret)")
 
 
-# **********************************************
-#= Otpim.jl =#
-#= older optimization code with Optim package =#
-optimization = Optim.optimize(
-                x -> estimation(x, choiceMomentData, wageMomentData)[1]
-                ,params
-                ,NelderMead()
-                ,Optim.Options(
-                 f_tol = 0.05
-                ,g_tol = 0.05
-                ,allow_f_increases= true
-                ,iterations = 2000
-                ))
-
-println(optimization)
-println(Optim.minimizer(optimization))
+# #= ********************************************** =#
+# #= Otpim.jl =#
+# #= older optimization code with Optim package =#
+# optimization = Optim.optimize(
+#                 x -> estimation(x, choiceMomentData, wageMomentData)[1]
+#                 ,params
+#                 ,NelderMead()
+#                 ,Optim.Options(
+#                  f_tol = 0.05
+#                 ,g_tol = 0.05
+#                 ,allow_f_increases= true
+#                 ,iterations = 2000
+#                 ))
+#
+# println(optimization)
+# println(Optim.minimizer(optimization))
 
 
 #=**********************************************=#
@@ -2060,84 +2073,84 @@ println(Optim.minimizer(optimization))
 
 
 ################################################################################
-# #= estimating standard error's of the model parameters =#
+# # #= estimating standard error's of the model parameters =#
+# #
+# # # Pkg.add("ForwardDiff")
+# # # using ForwardDiff
+# # #
+# # # @everywhere  g = x -> ForwardDiff.jacobian(estimation, x); # g = ∇f
+# # #
+# # # Jacobian =  g(params)
 #
-# # Pkg.add("ForwardDiff")
-# # using ForwardDiff
-# #
-# # @everywhere  g = x -> ForwardDiff.jacobian(estimation, x); # g = ∇f
-# #
-# # Jacobian =  g(params)
-
-params = Optim.minimizer(optimization)
-
-Jacobian = 0.0 .* Array{Float64,2}(undef,(size(moment,1),size(params,1)) )
-Effect = 0.0 .* Array{Float64,2}(undef,(size(params,1),2) )
-
-input1 = copy(params)
-input2 = copy(params)
-
-for i in 1:size(params,1)
-    print(i,"\n")
-    input1 = copy(params)
-    input1[i] = params[i]*0.990
-    result, moment1, momentData = estimation(input1, choiceMomentData, wageMomentData)
-    Effect[i,1] = result
-
-    input2 = copy(params)
-    input2[i] = params[i]*1.010
-    result, moment2, momentData = estimation(input2, choiceMomentData, wageMomentData)
-    Effect[i,2] = result
-
-    if params[i] > 0
-        diff = (moment2 - moment1)./(abs(input2[i]-input1[i]))
-    else
-        diff = (moment1 - moment2)./(abs(input2[i]-input1[i]))
-    end
-    Jacobian[:,i] = diff
-    # print(moment2-moment1,"   ",abs(input2[i]-input1[i]))
-    # print("\n",params[i]," ",input2[i]," ",input1[i],"\n")
-
-end
-
-using DataFrames
-jac =DataFrame(Jacobian);
-jac = filter(row -> ! isnan(row.x1), jac);
-jac = Matrix(jac);
-
-# momentData2 =DataFrame(momentData);
-# momentData2 = filter(row -> ! isnan(row.x1), momentData2);
-# momentData2 = Matrix(momentData2);
-
-W = 1 * Matrix(I, size(jac,1), size(jac,1))
-# for i = 1:size(W,1)
-#     W[i,i] = 1/ momentData2[i]
+# params = Optim.minimizer(optimization)
+#
+# Jacobian = 0.0 .* Array{Float64,2}(undef,(size(moment,1),size(params,1)) )
+# Effect = 0.0 .* Array{Float64,2}(undef,(size(params,1),2) )
+#
+# input1 = copy(params)
+# input2 = copy(params)
+#
+# for i in 1:size(params,1)
+#     print(i,"\n")
+#     input1 = copy(params)
+#     input1[i] = params[i]*0.990
+#     result, moment1, momentData = estimation(input1, choiceMomentData, wageMomentData)
+#     Effect[i,1] = result
+#
+#     input2 = copy(params)
+#     input2[i] = params[i]*1.010
+#     result, moment2, momentData = estimation(input2, choiceMomentData, wageMomentData)
+#     Effect[i,2] = result
+#
+#     if params[i] > 0
+#         diff = (moment2 - moment1)./(abs(input2[i]-input1[i]))
+#     else
+#         diff = (moment1 - moment2)./(abs(input2[i]-input1[i]))
+#     end
+#     Jacobian[:,i] = diff
+#     # print(moment2-moment1,"   ",abs(input2[i]-input1[i]))
+#     # print("\n",params[i]," ",input2[i]," ",input1[i],"\n")
+#
 # end
+#
+# using DataFrames
+# jac =DataFrame(Jacobian);
+# jac = filter(row -> ! isnan(row.x1), jac);
+# jac = Matrix(jac);
+#
+# # momentData2 =DataFrame(momentData);
+# # momentData2 = filter(row -> ! isnan(row.x1), momentData2);
+# # momentData2 = Matrix(momentData2);
+#
+# W = 1 * Matrix(I, size(jac,1), size(jac,1))
+# # for i = 1:size(W,1)
+# #     W[i,i] = 1/ momentData2[i]
+# # end
+#
+# error = transpose(jac) * W * jac ;
 
-error = transpose(jac) * W * jac ;
 
 
 
 
-
-# ***************************************************
-#= send email after completing the optimization =#
-opt = SendOptions(
-  isSSL = true,
-  username = "juliacodeserver@gmail.com",
-  passwd = "JuliaCodeServer")
-#Provide the message body as RFC5322 within an IO
-body = IOBuffer(
-  "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-  "From: You <juliacodeserver@gmail.com>\r\n" *
-  "To: ehsansaboori75@gmail.com\r\n" *
-  "Subject: Julia Code\r\n" *
-  "\r\n" *
-  "Julia code completed on the server\r\n")
-url = "smtps://smtp.gmail.com:465"
-rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
-from = "<juliacodeserver@gmail.com>"
-resp = send(url, rcpt, from, body, opt)
+# #=***************************************************=#
+# #= send email after completing the optimization =#
+# opt = SendOptions(
+#   isSSL = true,
+#   username = "juliacodeserver@gmail.com",
+#   passwd = "JuliaCodeServer")
+# #Provide the message body as RFC5322 within an IO
+# body = IOBuffer(
+#   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
+#   "From: You <juliacodeserver@gmail.com>\r\n" *
+#   "To: ehsansaboori75@gmail.com\r\n" *
+#   "Subject: Julia Code\r\n" *
+#   "\r\n" *
+#   "Julia code completed on the server\r\n")
+# url = "smtps://smtp.gmail.com:465"
+# rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
+# from = "<juliacodeserver@gmail.com>"
+# resp = send(url, rcpt, from, body, opt)
 
 
 
