@@ -102,7 +102,9 @@ using LinearAlgebra
 
 # using Test
 
-# using SMTPClient # for sending email
+if ENV["USER"] == "sabouri"
+    using SMTPClient # for sending email
+end
 
 using Distributed
 
@@ -934,7 +936,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         error = (
             (
                 wageMoment[i, wageCol["incomeData"]] -wageMoment[i, wageCol["incomeSim"]]
-            ) / wageMoment[i, wageCol["incomeData"]]
+            ) / wageMoment[i, wageCol["incomeStdBoot"]]
         )
 
         # if error > 0.5
@@ -967,7 +969,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         error = (
             (
                 wageMoment[i, wageCol["devData"]] -wageMoment[i, wageCol["devSim"]]
-            ) / wageMoment[i, wageCol["devData"]]
+            ) / wageMoment[i, wageCol["devStdBoot"]]
         )
 
         # if error > 0.5
@@ -999,16 +1001,13 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
             (
                 choiceMoment[i, choiceCol["homeData"]] -
                 choiceMoment[i, choiceCol["homeSim" ]]
-            ) / choiceMoment[i, choiceCol["homeData"]]
+            ) / choiceMoment[i, choiceCol["homeStdBoot"]]
         )
 
         # if error > 0.5
         #     error = error*2
         # end
 
-        if choiceMoment[i, choiceCol["educated"]] .== -1
-            error = error*sqrt(2)
-        end
         if isnan(error)
             error =  0.0
         end
@@ -1023,7 +1022,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
             (
                 choiceMoment[i, choiceCol["studyData"]] -
                 choiceMoment[i, choiceCol["studySim" ]]
-            ) / choiceMoment[i, choiceCol["studyData"]]
+            ) / choiceMoment[i, choiceCol["studyStdBoot"]]
         )
         # age = choiceMoment[i, choiceCol["age"]]
         # educated = choiceMoment[i, choiceCol["educated"]]
@@ -1034,9 +1033,6 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         #     error = error*2
         # end
 
-        if choiceMoment[i, choiceCol["educated"]] .== -1
-            error = error*sqrt(2)
-        end
         if isnan(error)
             error =  0.0
         end
@@ -1048,7 +1044,7 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
             (
                 choiceMoment[i, choiceCol["whiteData"]] -
                 choiceMoment[i, choiceCol["whiteSim" ]]
-            ) / choiceMoment[i, choiceCol["whiteData"]]
+            ) / choiceMoment[i, choiceCol["whiteStdBoot"]]
         )
 
         # age = choiceMoment[i, choiceCol["age"]]
@@ -1060,9 +1056,6 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         #     error = error*2
         # end
 
-        if choiceMoment[i, choiceCol["educated"]] .== -1
-            error = error*sqrt(2)
-        end
 
         if isnan(error)
             error =  0.0
@@ -1080,16 +1073,12 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
             (
                 choiceMoment[i, choiceCol["blueData"]] -
                 choiceMoment[i, choiceCol["blueSim" ]]
-            ) / choiceMoment[i, choiceCol["blueData"]]
+            ) / choiceMoment[i, choiceCol["blueStdBoot"]]
         )
 
         # if error > 0.5
         #     error = error*2
         # end
-
-        if choiceMoment[i, choiceCol["educated"]] .== -1
-            error = error*sqrt(2)
-        end
 
         if isnan(error)
             error =  0.0
@@ -1106,27 +1095,23 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
             (
                 choiceMoment[i, choiceCol["milData"]] -
                 choiceMoment[i, choiceCol["milSim" ]]
-            ) / choiceMoment[i, choiceCol["milData"]]
+            ) / choiceMoment[i, choiceCol["milStdBoot"]]
         )
-
         # if error > 0.5
         #     error = error*2
         # end
 
-        if choiceMoment[i, choiceCol["educated"]] .== -1
-            error = error*sqrt(2)
-        end
-
         if isnan(error)
             error =  0.0
         end
-
-        milError += error^2
+        if choiceMoment[i, choiceCol["age"]] > 18
+            milError += error^2
+        end
 
     end
 
 
-    #= Printing each error seperately =#
+    # #= Printing each error seperately =#
     # print("\n wageWhiteError  = ", wageWhiteError)
     # print("\n wageBlueError   = ", wageBlueError )
     # print("\n homeError       = ", homeError     )
@@ -1233,7 +1218,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     tc1T4 = tc1T1
     α24 = α22
 
-    N = 10 * 1000 ;   # number of individual to simulate their behaviour
+    N = 50 * 1000 ;   # number of individual to simulate their behaviour
 
     #= share of each education level at 15 years old =#
     # levels are 0, 5, 8, 10
@@ -1251,7 +1236,7 @@ function estimation(params, choiceMomentData, wageMomentData)
         bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
     end
 
-    δ = 0.7937395498108646 ;      # discount factor
+    δ = 0.90 #0.7937395498108646 ;      # discount factor
 
     #=****************************************************=#
     #= check the validity of the input parameters =#
@@ -1288,7 +1273,7 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     #=****************************************************=#
     #= solve the model =#
-    M = 140 #200
+    M = 150 #200
 
     #=     conscription goup 1     =#
     epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0]
@@ -1449,7 +1434,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup1T1, EmaxGroup1T1, weightsT1, 1111)
         simGroup1T1[:, simCol["type"]] .= 1
     else
-        simGroup1T1 = reshape([],0,10)
+        simGroup1T1 = reshape([],0,11)
     end
 
     weightsT2 = [
@@ -1469,7 +1454,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup1T2, EmaxGroup1T2, weightsT2, 2222)
         simGroup1T2[:, simCol["type"]] .= 2
     else
-        simGroup1T2 = reshape([],0,10)
+        simGroup1T2 = reshape([],0,11)
     end
 
     weightsT3 = [
@@ -1489,7 +1474,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup1T3, EmaxGroup1T3, weightsT3, 1345)
         simGroup1T3[:, simCol["type"]] .= 3
     else
-        simGroup1T3 = reshape([],0,10)
+        simGroup1T3 = reshape([],0,11)
     end
 
     weightsT4 = [
@@ -1510,7 +1495,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup1T4, EmaxGroup1T4, weightsT4, 5432)
         simGroup1T4[:, simCol["type"]] .= 4
     else
-        simGroup1T4 = reshape([],0,10)
+        simGroup1T4 = reshape([],0,11)
     end
 
 
@@ -1527,7 +1512,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup2T1, EmaxGroup2T1, weightsT1, 3333)
         simGroup2T1[:, simCol["type"]] .= 1
     else
-        simGroup2T1 = reshape([],0,10)
+        simGroup2T1 = reshape([],0,11)
     end
     NGroup2T2 = E1T2+E2T2+E3T2+E4T2 - NGroup1T2
     if NGroup2T2 > 0
@@ -1540,7 +1525,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup2T2, EmaxGroup2T2, weightsT2, 4444)
         simGroup2T2[:, simCol["type"]] .= 2
     else
-        simGroup2T2 = reshape([],0,10)
+        simGroup2T2 = reshape([],0,11)
     end
 
     NGroup2T3 = E1T3+E2T3+E3T3+E4T3 - NGroup1T3
@@ -1554,7 +1539,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup2T3, EmaxGroup2T3, weightsT3, 5234)
         simGroup2T3[:, simCol["type"]] .= 3
     else
-        simGroup2T3 = reshape([],0,10)
+        simGroup2T3 = reshape([],0,11)
     end
 
     NGroup2T4 = E1T4+E2T4+E3T4+E4T4 - NGroup1T4
@@ -1568,7 +1553,7 @@ function estimation(params, choiceMomentData, wageMomentData)
                                 NGroup2T4, EmaxGroup2T4, weightsT4, 7764)
         simGroup2T4[:, simCol["type"]] .= 4
     else
-        simGroup2T4 = reshape([],0,10)
+        simGroup2T4 = reshape([],0,11)
     end
 
 
@@ -1587,17 +1572,19 @@ function estimation(params, choiceMomentData, wageMomentData)
     also we embed data moment in this array
     wageMomentData is the given wage moment from data
     =#
-    wageMoment= Array{Float64,2}(undef, (size(wageMomentData,1),7))
+    wageMoment= Array{Float64,2}(undef, (size(wageMomentData,1),9))
     wageCol = Dict(
         "age"         => 1,
         "educated"    => 2,
         "collar"      => 3,
         "incomeData"  => 4,
-        "devData"     => 5,
-        "incomeSim"   => 6,
-        "devSim"      => 7
+        "incomeStdBoot" =>5,
+        "devData"     => 6,
+        "devStdBoot"  => 7,
+        "incomeSim"   => 8,
+        "devSim"      => 9
     )
-    wageMoment[:,1:5]= wageMomentData[:,1:5];
+    wageMoment[:,1:7]= wageMomentData[:,1:7];
 
     #=
     generating an Array named choiceMoment
@@ -1605,7 +1592,7 @@ function estimation(params, choiceMomentData, wageMomentData)
     also we embed data moment in this array
     choiceMomentData is the given alternative share moment from data
     =#
-    choiceMoment= Array{Float64,2}(undef, (size(choiceMomentData,1),12) )
+    choiceMoment= Array{Float64,2}(undef, (size(choiceMomentData,1),17) )
     choiceCol = Dict(
         "age"       => 1,
         "educated"  => 2,
@@ -1614,13 +1601,18 @@ function estimation(params, choiceMomentData, wageMomentData)
         "whiteData" => 5,
         "blueData"  => 6,
         "milData"   => 7,
-        "homeSim"   => 8,
-        "studySim"  => 9,
-        "whiteSim"  => 10,
-        "blueSim"   => 11,
-        "milSim"    => 12
+        "homeStdBoot"  => 8,
+        "studyStdBoot" => 9,
+        "whiteStdBoot" => 10,
+        "blueStdBoot"  => 11,
+        "milStdBoot"   => 12,
+        "homeSim"   => 13,
+        "studySim"  => 14,
+        "whiteSim"  => 15,
+        "blueSim"   => 16,
+        "milSim"    => 17
     )
-    choiceMoment[ :, 1:7] =choiceMomentData[: ,1:7]
+    choiceMoment[ :, 1:12] =choiceMomentData[: ,1:12]
 
     #=
     removing share below 1 percent for two reason:
@@ -1709,7 +1701,7 @@ function estimation(params, choiceMomentData, wageMomentData)
             ]
 
             choiceMoment[(choiceMoment[:, choiceCol["age"]].==age).&
-                (choiceMoment[:,choiceCol["educated"]].==educated), 8:12] =
+                (choiceMoment[:,choiceCol["educated"]].==educated), choiceCol["homeSim"]:choiceCol["milSim"]] =
                 flag2 / sum(flag2)
 
         end #educated
@@ -1813,14 +1805,18 @@ end
 if ENV["USER"] == "sabouri"
     wageMomentData= readdlm("/home/sabouri/Labor/DataMoments/wageMoment2.csv",',')      ;
     choiceMomentData = readdlm("/home/sabouri/Labor/DataMoments/choiceMoment2.csv",',') ;
+    wageMomentStdBoot= readdlm("/home/sabouri/Labor/DataMoments/wageMomentStdBoot.csv",',')      ;
+    choiceMomentStdBoot = readdlm("/home/sabouri/Labor/DataMoments/choiceMomentStdBoot.csv",',') ;
 end
 #= code for reading in Linux operating system =#
 if ENV["USER"] == "ehsan"
     wageMomentData= readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',')       ;
     choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
+    wageMomentStdBoot = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMomentStdBoot.csv",',')
+    choiceMomentStdBoot = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMomentStdBoot.csv",',')
 end
 #= code for reading in windows operating system =#
-if ENV["USER"] == "claudiq"
+if ENV["USER"] == "claudioq"
     wageMomentData= readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/wageMoment2.csv",',') ;
     choiceMomentData = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',') ;
 end
@@ -1952,14 +1948,15 @@ params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
         πE2T1, πE2T2, πE2T3,
         π1T1, π1T2, π1T3, π1T4  ] ;
 
-# params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
 
+# params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
+params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
 
 
 print("\nEstimation started:")
 start = Dates.unix2datetime(time())
 
-result, moment, momentData = estimation(params, choiceMomentData, wageMomentData) ;
+result, moment, momentData = estimation(params, choiceMomentStdBoot, wageMomentStdBoot) ;
 
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
 print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
@@ -1984,9 +1981,10 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 ## ##############################################################################
 #= Optimization =#
+if ENV["USER"] == "sabouri"
 
-# println("\n \n \n \n")
-# println("optimization started at = " ,Dates.format(now(), "HH:MM"))
+println("\n \n \n \n")
+println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 
 #=**********************************************=#
 # #= NLopt.jl =#
@@ -2013,22 +2011,22 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 # println("got $optf at $optx after $numevals iterations (returned $ret)")
 
 
-# #= ********************************************** =#
-# #= Otpim.jl =#
-# #= older optimization code with Optim package =#
-# optimization = Optim.optimize(
-#                 x -> estimation(x, choiceMomentData, wageMomentData)[1]
-#                 ,params
-#                 ,NelderMead()
-#                 ,Optim.Options(
-#                  f_tol = 0.05
-#                 ,g_tol = 0.05
-#                 ,allow_f_increases= true
-#                 ,iterations = 2000
-#                 ))
-#
-# println(optimization)
-# println(Optim.minimizer(optimization))
+#= ********************************************** =#
+#= Otpim.jl =#
+#= older optimization code with Optim package =#
+optimization = Optim.optimize(
+                x -> estimation(x, choiceMomentStdBoot, wageMomentStdBoot)[1]
+                ,params
+                ,NelderMead()
+                ,Optim.Options(
+                 f_tol = 0.05
+                ,g_tol = 0.05
+                ,allow_f_increases= true
+                ,iterations = 2000
+                ))
+
+println(optimization)
+println(Optim.minimizer(optimization))
 
 
 #=**********************************************=#
@@ -2133,24 +2131,24 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 
 
-# #=***************************************************=#
-# #= send email after completing the optimization =#
-# opt = SendOptions(
-#   isSSL = true,
-#   username = "juliacodeserver@gmail.com",
-#   passwd = "JuliaCodeServer")
-# #Provide the message body as RFC5322 within an IO
-# body = IOBuffer(
-#   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-#   "From: You <juliacodeserver@gmail.com>\r\n" *
-#   "To: ehsansaboori75@gmail.com\r\n" *
-#   "Subject: Julia Code\r\n" *
-#   "\r\n" *
-#   "Julia code completed on the server\r\n")
-# url = "smtps://smtp.gmail.com:465"
-# rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
-# from = "<juliacodeserver@gmail.com>"
-# resp = send(url, rcpt, from, body, opt)
+#=***************************************************=#
+#= send email after completing the optimization =#
+opt = SendOptions(
+  isSSL = true,
+  username = "juliacodeserver@gmail.com",
+  passwd = "JuliaCodeServer")
+#Provide the message body as RFC5322 within an IO
+body = IOBuffer(
+  "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
+  "From: You <juliacodeserver@gmail.com>\r\n" *
+  "To: ehsansaboori75@gmail.com\r\n" *
+  "Subject: Julia Code\r\n" *
+  "\r\n" *
+  "Julia code completed on the server\r\n")
+url = "smtps://smtp.gmail.com:465"
+rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
+from = "<juliacodeserver@gmail.com>"
+resp = send(url, rcpt, from, body, opt)
 
 
 
@@ -2159,7 +2157,7 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 
 
-
+end
 
 ##############################################################
 # #= ploting the output =#
