@@ -1173,9 +1173,9 @@ function estimation(params, choiceMomentData, wageMomentData)
         ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
     α50, α51, α52,
     σ1, σ2, σ3, σ4, σ34 ,σ5,
-    πE1T1, πE1T2, πE1T3,
-    πE2T1, πE2T2, πE2T3,
-    π1T1, π1T2, π1T3, π1T4                 = params
+    πE1T1exp, πE1T2exp, πE1T3exp,
+    πE2T1exp, πE2T2exp, πE2T3exp,
+    π1T1exp, π1T2exp, π1T3exp, π1T4exp                 = params
 
 
     #=****************************************************=#
@@ -1236,38 +1236,65 @@ function estimation(params, choiceMomentData, wageMomentData)
         bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
     end
 
-    δ = 0.90 #0.7937395498108646 ;      # discount factor
+    δ = 0.85 #0.7937395498108646 ;      # discount factor
 
     #=****************************************************=#
     #= check the validity of the input parameters =#
-    if (δ > 1) | (δ < 0)
-        return 1e4
-    end
-    if (πE1T1 > 1) | (πE1T1 < 0)
-        return 1e4
-    end
-    if (πE1T2 > 1) | (πE1T2 < 0)
-        return 1e4
-    end
-    if (πE1T3 > 1) | (πE1T3 < 0)
-        return 1e4
-    end
-    if (1-πE1T1-πE1T2-πE1T3) < 0
-        return 1e4
-    end
 
-    if (πE2T1 > 1) | (πE2T1 < 0)
-        return 1e4
+    πE1T1 = exp(πE1T1exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T2 = exp(πE1T2exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T3 = exp(πE1T3exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T4 = exp(0)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+
+    πE2T1 = exp(πE2T1exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T2 = exp(πE2T2exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T3 = exp(πE2T3exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T4 = exp(0)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+
+    π1T1 = exp(π1T1exp) / (1+exp(π1T1exp))
+    π1T2 = exp(π1T2exp) / (1+exp(π1T2exp))
+    π1T3 = exp(π1T3exp) / (1+exp(π1T3exp))
+    π1T4 = exp(π1T4exp) / (1+exp(π1T4exp))
+
+
+    wrongParametersReturn = 10 * bestResult[1]
+    if (δ > 1) | (δ < 0)
+        println("δ : Wrong parameters were given as input!")
+        return wrongParametersReturn
     end
-    if (πE2T2 > 1) | (πE2T2 < 0)
-        return 1e4
-    end
-    if (πE2T3 > 1) | (πE2T3 < 0)
-        return 1e4
-    end
-    if (1-πE2T1-πE2T2-πE2T3) < 0
-        return 1e4
-    end
+    # if (πE1T1 > 1) | (πE1T1 < 0)
+    #     println("πE1T1 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (πE1T2 > 1) | (πE1T2 < 0)
+    #     println("πE1T2 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (πE1T3 > 1) | (πE1T3 < 0)
+    #     println("πE1T3 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (1-πE1T1-πE1T2-πE1T3) < 0
+    #     println("(1-πE1T1-πE1T2-πE1T3) : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    #
+    # if (πE2T1 > 1) | (πE2T1 < 0)
+    #     println("πE2T1 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (πE2T2 > 1) | (πE2T2 < 0)
+    #     println("πE2T2 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (πE2T3 > 1) | (πE2T3 < 0)
+    #     println("πE2T3 : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
+    # if (1-πE2T1-πE2T2-πE2T3) < 0
+    #     println("(1-πE2T1-πE2T2-πE2T3) : Wrong parameters were given as input!")
+    #     return wrongParametersReturn
+    # end
 
 
 
@@ -1284,7 +1311,8 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     #= check if the variance-covariance matrix is valid =#
     if !isposdef(epsSolveσGroup1)
-        return 1e4
+        println("epsSolveσGroup1 : Wrong parameters were given as input!")
+        return wrongParametersReturn
     end
 
     epssolveGroup1= rand(MersenneTwister(1234),
@@ -1329,7 +1357,8 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     #= check if the variance-covariance matrix is valid =#
     if !isposdef(epsSolveσGroup2)
-        return 1e4
+        println("epsSolveσGroup2 : Wrong parameters were given as input!")
+        return wrongParametersReturn
     end
 
     epssolveGroup2= rand(MersenneTwister(4321),
@@ -1877,13 +1906,25 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 πE1T1 = 0.7229226597006355
 πE1T2 = 0.200245804890741
 πE1T3 = 0.05042791889785734
-# πE1T4 = 1- πE1T1- πE1T2- πE1T3
+πE1T4 = 1- πE1T1- πE1T2- πE1T3
+
+den = 1/(1-0.7229226597006355-0.200245804890741-0.05042791889785734)
+πE1T1exp = log(den*0.7229226597006355)
+πE1T2exp = log(den*0.200245804890741)
+πE1T3exp = log(den*0.05042791889785734)
+
 
 #= share of each type for those education equalls 10 in 15 years old =#
 πE2T1 = 0.532182272493524
 πE2T2 = 0.21200626083052643
 πE2T3 = 0.1216150006037918
 # πE2T4 = 1- πE2T1- πE2T2- πE2T3
+
+den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
+πE2T1exp = log(den*0.532182272493524)
+πE2T2exp = log(den*0.21200626083052643)
+πE2T3exp = log(den*0.1216150006037918)
+
 
 
 #**********************
@@ -1917,10 +1958,14 @@ tc2 = log(4.708012735120168e7)     ;    # education >= 16?
 σ5 = log(9.163008268122894e13) ;
 
 # π1 = 0.79 ;     # share of individuals type 1
-π1T1 = 0.805
-π1T2 = 0.835
-π1T3 = 0.93
-π1T4 = 0.93
+π1T1exp = -log((1/0.805)-1)
+π1T2exp = -log((1/0.835)-1)
+π1T3exp = -log((1/0.93)-1)
+π1T4exp = -log((1/0.93)-1)
+
+
+
+
 
 δ = 0.7937395498108646 ;      # discount factor
 
@@ -1944,13 +1989,13 @@ params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
             ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
         α50, α51, α52,
         σ1, σ2, σ3, σ4, σ34 ,σ5,
-        πE1T1, πE1T2, πE1T3,
-        πE2T1, πE2T2, πE2T3,
-        π1T1, π1T2, π1T3, π1T4  ] ;
+        πE1T1exp, πE1T2exp, πE1T3exp,
+        πE2T1exp, πE2T2exp, πE2T3exp,
+        π1T1exp, π1T2exp, π1T3exp, π1T4exp  ] ;
 
 
 # params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
-params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
+# params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
 
 
 print("\nEstimation started:")
@@ -1968,8 +2013,6 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 # writedlm( "/home/sabouri/thesis/moments/data/choiceMoment.csv",  choiceMoment, ',');
 # writedlm( "/home/sabouri/thesis/moments/data/wageMoment.csv",  wageMoment, ',');
-
-
 
 
 
@@ -2019,10 +2062,10 @@ optimization = Optim.optimize(
                 ,params
                 ,NelderMead()
                 ,Optim.Options(
-                 f_tol = 0.05
-                ,g_tol = 0.05
+                 f_tol = 10^(-15)
+                ,g_tol = 10^(-15)
                 ,allow_f_increases= true
-                ,iterations = 2000
+                ,iterations = 3000
                 ))
 
 println(optimization)
@@ -2131,24 +2174,24 @@ println(Optim.minimizer(optimization))
 
 
 
-#=***************************************************=#
-#= send email after completing the optimization =#
-opt = SendOptions(
-  isSSL = true,
-  username = "juliacodeserver@gmail.com",
-  passwd = "JuliaCodeServer")
-#Provide the message body as RFC5322 within an IO
-body = IOBuffer(
-  "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-  "From: You <juliacodeserver@gmail.com>\r\n" *
-  "To: ehsansaboori75@gmail.com\r\n" *
-  "Subject: Julia Code\r\n" *
-  "\r\n" *
-  "Julia code completed on the server\r\n")
-url = "smtps://smtp.gmail.com:465"
-rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
-from = "<juliacodeserver@gmail.com>"
-resp = send(url, rcpt, from, body, opt)
+# #=***************************************************=#
+# #= send email after completing the optimization =#
+# opt = SendOptions(
+#   isSSL = true,
+#   username = "juliacodeserver@gmail.com",
+#   passwd = "JuliaCodeServer")
+# #Provide the message body as RFC5322 within an IO
+# body = IOBuffer(
+#   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
+#   "From: You <juliacodeserver@gmail.com>\r\n" *
+#   "To: ehsansaboori75@gmail.com\r\n" *
+#   "Subject: Julia Code\r\n" *
+#   "\r\n" *
+#   "Julia code completed on the server\r\n")
+# url = "smtps://smtp.gmail.com:465"
+# rcpt = ["<ehsansaboori75@gmail.com>", "<z.shamlooo@gmail.com>" ]
+# from = "<juliacodeserver@gmail.com>"
+# resp = send(url, rcpt, from, body, opt)
 
 
 
