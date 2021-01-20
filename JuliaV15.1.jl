@@ -338,7 +338,7 @@ conscription goup 2: obligated to attend conscription
                 α50, α51, α52,
                 δ,
                 epssolve,
-                age, educ, sl, x3, x4, x5, LastSchool,
+                age, educ, sl, x3, x4, x5,
                 Emax)
 
     x3Max = 30
@@ -379,15 +379,15 @@ conscription goup 2: obligated to attend conscription
 
         #= assume that maximum years of experience is 30 years. =#
 
-        u1= u1 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1         ,LastSchool+1+1*(LastSchool!=2)]
+        u1= u1 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1          ]
 
-        u2= u3 .+ δ*Emax[age-16+1 ,educ+1+1*(educ!=22),1+1 ,x3+1           ,x4+1           ,x5+1         ,0+1                           ]
+        u2= u3 .+ δ*Emax[age-16+1 ,educ+1+1*(educ!=22),1+1 ,x3+1           ,x4+1           ,x5+1          ]
 
-        u3= u3 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1+1*(x3!=x3Max),x4+1           ,x5+1      ,LastSchool+1+1*(LastSchool!=2)]
+        u3= u3 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1+1*(x3!=x3Max),x4+1           ,x5+1       ]
 
-        u4= u4 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1+1*(x4!=x4Max),x5+1      ,LastSchool+1+1*(LastSchool!=2)]
+        u4= u4 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1+1*(x4!=x4Max),x5+1       ]
 
-        u5= u5 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1+1*(x5<2),LastSchool+1+1*(LastSchool!=2)]
+        u5= u5 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1+1*(x5<2) ]
 
         ######
         ######
@@ -414,26 +414,30 @@ conscription goup 2: obligated to attend conscription
                 value= s/length(u5)
             else
                 if educ == 22
-                    s=0.0
-                    @simd for i in 1:length(u5)
-                        s+= max(u5[i])
-                    end
-                    value= s/length(u5)
-                else
-                    if LastSchool == 0
+                    if sl == 0
                         s=0.0
                         @simd for i in 1:length(u5)
-                            s+= max(u1[i], u2[i], u5[i])
+                            s+= max(u5[i])
                         end
-                    elseif LastSchool < 2
+                        value= s/length(u5)
+                    elseif sl == 1
                         s=0.0
                         @simd for i in 1:length(u5)
                             s+= max(u1[i], u5[i])
                         end
-                    else
+                        value= s/length(u5)
+                    end
+
+                else
+                    if sl == 1
                         s=0.0
                         @simd for i in 1:length(u5)
-                            s+= max(u2[i], u5[i])
+                            s+= max(u1[i], u2[i], u5[i])
+                        end
+                    elseif sl == 0
+                        s=0.0
+                        @simd for i in 1:length(u5)
+                            s+= max(u1[i], u5[i])
                         end
                     end
                     value= s/length(u5)
@@ -479,7 +483,7 @@ function solveGroup2(α10, α11, α12, α13,
         Last time at school befor conscription       # 3 {0,1,2}
     Stata space size= 49*23*2*31*31*3=         6,498,282
     =#
-    Emax= SharedArray{Float64,7}(49, 23, 2, x3Max+1, x4Max+1, 3, 3);
+    Emax= SharedArray{Float64,6}(49, 23, 2, x3Max+1, x4Max+1, 3);
 
 
     ageState  = 65 :-1 :17   # age age of the individual
@@ -488,15 +492,15 @@ function solveGroup2(α10, α11, α12, α13,
     x3State   = 0 :1 : x3Max     # x3 experience in white-collar
     x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
     x5State   = [0,1,2]      # x5 indicate the years attending conscription
-    LastSchoolState = [0,1,2]
+    # LastSchoolState = [0,1,2]
 
 
     for age in ageState
         @sync @distributed for educ in educState
-            for sl in slState,x5 in x5State, LastSchool in LastSchoolState
+            for sl in slState,x5 in x5State
                 for x3 in 0:1:min(30, age-5-educ-x5)
                     for x4 in 0:1:min(30, age-5-educ-x5-x3)
-                        Emax[age-16, educ+1, sl+1, x3+1, x4+1, x5+1, LastSchool+1] =
+                        Emax[age-16, educ+1, sl+1, x3+1, x4+1, x5+1] =
                             valueFunctionGroup2(α10, α11, α12, α13,
                                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                                 α3, α30, α31, α32, α33, α34, α35, α36,
@@ -504,7 +508,7 @@ function solveGroup2(α10, α11, α12, α13,
                                 α50, α51, α52,
                                 δ,
                                 epssolve,
-                                age, educ, sl, x3, x4, x5, LastSchool,
+                                age, educ, sl, x3, x4, x5,
                                 Emax)
                     end
                 end
@@ -574,13 +578,11 @@ function simulateGroup1(α10, α11, α12, α13,
         "educated" => 7,
         "x5"       => 8,
         "type"     => 9,
-        "Emax"     => 10,
-        "LastSchool" => 11
+        "Emax"     => 10
     );
     #= Pre-allocating each person-year's state=#
-    sim = Array{Float64, 2}(undef, (N*50, 11))
+    sim = Array{Float64, 2}(undef, (N*50, 10))
     sim[:,simCol["x5"]] .= NaN
-    sim[:,simCol["LastSchool"]] .= NaN
 
     #= education distribution in age 16 of people: =#
     educLevel = [0    ,5    ,8    ,10  ]
@@ -732,11 +734,10 @@ function simulateGroup2(α10, α11, α12, α13,
         "educated" => 7,
         "x5"       => 8,
         "type"     => 9,
-        "Emax"     => 10,
-        "LastSchool" => 11
+        "Emax"     => 10
     );
     #= Pre-allocating each person-year's state =#
-    sim = Array{Float64, 2}(undef, (N*50, 11))
+    sim = Array{Float64, 2}(undef, (N*50, 10))
 
     #= education distribution in age 16 of people: =#
     educLevel = [0    ,5    ,8    ,10  ]
@@ -767,14 +768,12 @@ function simulateGroup2(α10, α11, α12, α13,
                 educ = a[id]
                 sl   = 1 #0+1*(educ==10)+1*(educ==8)
                 x5   = 0
-                LastSchool   = 0
             else
                 x3   = convert(Int,sim[index-1,simCol["x3"]])
                 x4   = convert(Int,sim[index-1,simCol["x4"]])
                 educ = convert(Int,sim[index-1,simCol["educ"]])
                 sl   = 1*(sim[index-1,simCol["choice"]] == 2)
                 x5   = convert(Int, sim[index-1,simCol["x5"]])
-                LastSchool   = convert(Int, sim[index-1,simCol["LastSchool"]])
             end
 
             #= four shocks to person i in age 'age': =#
@@ -800,11 +799,11 @@ function simulateGroup2(α10, α11, α12, α13,
                 maxUtility = maximum(utility)
             else
 
-                u1= u1 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1           ,LastSchool+1+1*(LastSchool!=2) ]
-                u2= u2 +δ*Emax[age+1-17+1 ,educ+1+1*(educ< 22) ,1+1 ,x3+1            ,x4+1            ,x5+1           ,0+1 ]
-                u3= u3 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1+1*(x3< x3Max) ,x4+1            ,x5+1        ,LastSchool+1+1*(LastSchool!=2) ]
-                u4= u4 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1+1*(x4< x4Max) ,x5+1        ,LastSchool+1+1*(LastSchool!=2) ]
-                u5= u5 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1+1*(x5<2)  ,LastSchool+1+1*(LastSchool!=2) ]
+                u1= u1 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1        ]
+                u2= u2 +δ*Emax[age+1-17+1 ,educ+1+1*(educ< 22) ,1+1 ,x3+1            ,x4+1            ,x5+1    ]
+                u3= u3 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1+1*(x3< x3Max) ,x4+1            ,x5+1      ]
+                u4= u4 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1+1*(x4< x4Max) ,x5+1     ]
+                u5= u5 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1+1*(x5<2) ]
 
                 if age > 18
                     if x5 == 2
@@ -817,14 +816,16 @@ function simulateGroup2(α10, α11, α12, α13,
                             utility= [-1e20, -1e20, -1e20, -1e20, u5]
                     else
                         if educ == 22
-                            utility= [-1e20, -1e20, -1e20, -1e20, u5]
-                        else
-                            if LastSchool == 0
-                                utility= [u1, u2, -1e20, -1e20, u5]
-                            elseif LastSchool < 2
+                            if sl == 1
                                 utility= [u1, -1e20, -1e20, -1e20, u5]
-                            else
+                            elseif sl == 0
                                 utility= [-1e20, -1e20, -1e20, -1e20, u5]
+                            end
+                        else
+                            if sl == 1
+                                utility= [u1, u2, -1e20, -1e20, u5]
+                            elseif sl == 0
+                                utility= [u1, -1e20, -1e20, -1e20, u5]
                             end
                         end#if educ
                     end#if x5
@@ -880,14 +881,6 @@ function simulateGroup2(α10, α11, α12, α13,
                 sim[index, simCol["x5"]]    = x5 + 1
             end
             sim[index, simCol["Emax"]] = maxUtility #utility[choice]
-
-            if (age>18) & (LastSchool == 0)
-                sim[index, simCol["LastSchool"]] = LastSchool + 1*(choice!=2)
-            elseif (age>18) & (LastSchool < 2)  & (x5 == 0)
-                sim[index, simCol["LastSchool"]] = LastSchool + 1*(choice!=5)
-            else
-                sim[index, simCol["LastSchool"]] = LastSchool
-            end
 
             #=
              specifying if persion is educated or not (educ > 12 or not)
