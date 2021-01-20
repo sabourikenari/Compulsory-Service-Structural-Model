@@ -122,6 +122,29 @@ println("worker cores are: " , workers())
 
 
 ################################################################################
+#=
+    Define a function to calculate the mean of the maximum over some vectors.
+=#
+@everywhere function MeanMaximum(array)
+    length_each_vector = size(array[1])[1]
+    number_of_vector = size(array)[1]
+
+    s = 0.0
+    @simd for row in 1:length_each_vector
+        max = 0.0
+        for vector in 1:number_of_vector
+            if array[vector][row] > max
+                max = array[vector][row]
+            end
+        end
+        s += max
+    end
+    value= s/length_each_vector
+    return value
+end
+
+
+################################################################################
 #= contemporaneous utility function =#
 
 #= utility when choice is stay home =#
@@ -193,17 +216,9 @@ end
     if age == 65
 
         if educ < 22
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u2[i], u3[i], u4[i])
-            end
-            value= s/length(u1) #mean(max(u1,u2,u3,u4))
+            value = MeanMaximum([u1, u2, u3, u4])
         else
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u3[i], u4[i])
-            end
-            value= s/length(u1)#mean(max(u1,u2,u4))
+            value = MeanMaximum([u1, u3, u4])
         end
     else
 
@@ -216,17 +231,9 @@ end
         # end
 
         if educ < 22
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u2[i], u3[i], u4[i])
-            end
-            value= s/length(u1) #mean(max(u1,u2,u3,u4))
+            value= MeanMaximum([u1, u2, u3, u4])
         else
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u3[i], u4[i])
-            end
-            value= s/length(u1) #mean(max(u1,u2,u4))
+            value= MeanMaximum([u1, u3, u4])
         end
     end
     return value
@@ -361,20 +368,12 @@ conscription goup 2: obligated to attend conscription
 
     value= -1 # this is for when no if conditon binds
     if age == 65
-
         if educ < 22
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u2[i], u3[i], u4[i])
-            end
-            value= s/length(u1) #mean(max(u1,u2,u3,u4))
+            value= MeanMaximum([u1, u2, u3, u4])
         else
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u3[i], u4[i])
-            end
-            value= s/length(u1)#mean(max(u1,u2,u4))
+            value= MeanMaximum([u1, u3, u4])
         end
+
     else
 
         #= assume that maximum years of experience is 30 years. =#
@@ -392,64 +391,32 @@ conscription goup 2: obligated to attend conscription
         ######
         ######
         if age > 18
-            if x5 == 2
+            if     x5 == 2
                 if educ < 22
-                    s=0.0
-                    @simd for i in 1:length(u1)
-                        s+=max(u1[i], u2[i], u3[i], u4[i])
-                    end
-                    value= s/length(u1)
+                    value= MeanMaximum([u1, u2, u3, u4])
                 else
-                    s=0.0
-                    @simd for i in 1:length(u1)
-                        s+=max(u1[i], u3[i], u4[i])
-                    end
-                    value= s/length(u1)
+                    value= MeanMaximum([u1, u3, u4])
                 end
             elseif x5 == 1
-                s=0.0
-                @simd for i in 1:length(u5)
-                    s+= u5[i]
-                end
-                value= s/length(u5)
-            else
+                value= MeanMaximum([u5])
+            elseif x5 == 0
                 if educ == 22
                     if sl == 0
-                        s=0.0
-                        @simd for i in 1:length(u5)
-                            s+= max(u5[i])
-                        end
-                        value= s/length(u5)
+                        value= MeanMaximum([u5])
                     elseif sl == 1
-                        s=0.0
-                        @simd for i in 1:length(u5)
-                            s+= max(u1[i], u5[i])
-                        end
-                        value= s/length(u5)
+                        value= MeanMaximum([u1, u5])
                     end
-
                 else
-                    if sl == 1
-                        s=0.0
-                        @simd for i in 1:length(u5)
-                            s+= max(u1[i], u2[i], u5[i])
-                        end
+                    if     sl == 1
+                        value= MeanMaximum([u1, u2, u5])
                     elseif sl == 0
-                        s=0.0
-                        @simd for i in 1:length(u5)
-                            s+= max(u1[i], u5[i])
-                        end
+                        value= MeanMaximum([u1, u5])
                     end
-                    value= s/length(u5)
                 end
             end
 
         elseif age <= 18
-            s=0.0
-            @simd for i in 1:length(u1)
-                s+=max(u1[i], u2[i], u3[i], u4[i])
-            end
-            value= s/length(u1)
+            value= MeanMaximum([u1, u2, u3, u4])
         end
     end
     return value
