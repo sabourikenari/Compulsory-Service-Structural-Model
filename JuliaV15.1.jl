@@ -146,26 +146,6 @@ end
 
 
 
-# for i in 1:15
-#     a = div(i-1,5)+1
-#     b = mod(i-1,5)+1
-#     print("a= ",a," b= ",b,"\n")
-# end
-#
-# #=
-#     a 1:3
-#     b 1:5
-#     c 1:2
-# =#
-# for i in 1:30
-#     a = div(i-1,div(30,3))+1
-#     b_c = mod(i-1,10)+1
-#     b = div(b_c-1,2)+1
-#     c = mod(b_c-1,2)+1
-#
-#     print("a= ",a," b= ",b," c= ",c,"\n")
-# end
-
 ################################################################################
 #= contemporaneous utility function =#
 
@@ -201,135 +181,6 @@ end
 end
 
 ################################################################################
-# #=
-#     conscription group 1 value function and solve Emax function
-#     group 1: Not obligated to attend conscription
-#     value function: given state vector at an age, it denotes the maxiual value
-#     at age a over all possible career decisions.
-# =#
-#
-# #= value function for type 1: Not obligated to attent conscription =#
-# @everywhere function valueFunctionGroup1(α10, α11, α12, α13,
-#                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-#                 α3, α30, α31, α32, α33, α34, α35, α36,
-#                 α4, α40, α41, α42, α43, α44, α45, α46,
-#                 δ,
-#                 epssolve,
-#                 age, educ, sl, x3, x4,
-#                 Emax)
-#
-#     x3Max = 30
-#     x4Max = 30
-#
-#     ε1=epssolve[1,:]
-#     u1= util1(α10, α11, α12, α13, age, educ, ε1)
-#
-#     ε2=epssolve[2,:]
-#     u2= util2(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
-#
-#     ε3=epssolve[3,:]
-#     u3= util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, ε3, α22, α23)
-#
-#     ε4=epssolve[4,:]
-#     u4= util4(α4, α40, α41, α42, α43, α44, α45, α46, x3, x4, educ, ε4, α24, α25)
-#
-#
-#     value= -1 # this is for when no if conditon binds
-#     if age == 65
-#
-#         if educ < 22
-#             value = MeanMaximum([u1, u2, u3, u4])
-#         else
-#             value = MeanMaximum([u1, u3, u4])
-#         end
-#     else
-#
-#         # begin inbounds
-#         # assume that maximum amount of experience is 30 years.
-#         @inbounds u1= u1 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1  ,x4+1 ]
-#         @inbounds u2= u3 .+ δ*Emax[age-17+1+1, educ+1+1*(educ!=22),1+1,x3+1  ,x4+1 ]
-#         @inbounds u3= u3 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1+1*(x3!=x3Max),x4+1]
-#         @inbounds u4= u4 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1,x4+1+1*(x4!=x4Max)]
-#         # end
-#
-#         if educ < 22
-#             value= MeanMaximum([u1, u2, u3, u4])
-#         else
-#             value= MeanMaximum([u1, u3, u4])
-#         end
-#     end
-#     return value
-# end
-#
-#
-#
-#
-#
-# #= solve Emax for conscription group 1: Not obligated to attent conscription =#
-# function solveGroup1(α10, α11, α12, α13,
-#             α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-#             α3, α30, α31, α32, α33, α34, α35, α36,
-#             α4, α40, α41, α42, α43, α44, α45, α46,
-#             δ,
-#             epssolve)
-#
-#     x3Max = 30
-#     x4Max = 30
-#
-#     #=
-#     Pre-allocating Emax
-#     Emax function is calcuted until age 17
-#
-#     The arguments are in orders:
-#         age(17-65),                                  # 49
-#         education(0-22),                             # 23
-#         school status of last year(0,1),             # 2
-#         years of experience in white-collar(0-30),   # 31
-#         years of experience in blue-collar(0-30),    # 31
-#     State space size= 49*23*2*31*31=           2,166,094
-#     =#
-#
-#     Emax= SharedArray{Float64,5}(49, 23, 2, x3Max+1, x4Max+1);
-#
-#
-#     ageState  = 65 :-1 :17   # age age of the individual
-#     educState = 0 :1 :22     # educ number of completed education
-#     slState   = [0,1]        # sl schooling status of last period
-#     x3State   = 0 :1 : x3Max     # x3 experience in white-collar
-#     x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
-#
-#
-#     for age in ageState
-#         @sync @distributed for educ in educState
-#             for sl in slState, x3 in 0:1:min(30, age-5-educ)
-#                 for x4 in 0:1:min(30, age-5-educ-x3)
-#                     @inbounds Emax[age-16, educ+1, sl+1, x3+1, x4+1] =
-#                             valueFunctionGroup1(α10, α11, α12, α13,
-#                                 α20, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
-#                                 α3, α30, α31, α32, α33, α34, α35, α36,
-#                                 α4, α40, α41, α42, α43, α44, α45, α46,
-#                                 δ,
-#                                 epssolve,
-#                                 age, educ, sl, x3, x4,
-#                                 Emax)
-#                 end
-#             end #x3
-#         end #educ
-#     end #age
-#
-#     return Emax
-#
-# end
-
-
-
-
-
-
-
-
-
-################################################################################
 #=
     conscription group 1 value function and solve Emax function
     group 1: Not obligated to attend conscription
@@ -342,12 +193,13 @@ end
                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                 α3, α30, α31, α32, α33, α34, α35, α36,
                 α4, α40, α41, α42, α43, α44, α45, α46,
-                δ, epssolve,
+                δ,
+                epssolve,
                 age, educ, sl, x3, x4,
-                Emax, EmaxCol,
-                ageStateCount, educStateCount, slStateCount, x3StateCount, x4StateCount,
-                x3Max, x4Max)
+                Emax)
 
+    x3Max = 30
+    x4Max = 30
 
     ε1=epssolve[1,:]
     u1= util1(α10, α11, α12, α13, age, educ, ε1)
@@ -363,7 +215,6 @@ end
 
 
     value= -1 # this is for when no if conditon binds
-    Vbar1, Vbar2, Vbar3, Vbar4 = 0.0, 0.0, 0.0, 0.0
     if age == 65
 
         if educ < 22
@@ -371,59 +222,14 @@ end
         else
             value = MeanMaximum([u1, u3, u4])
         end
-
-        Vbar1 = util1(α10, α11, α12, α13, age, educ, 0)
-        Vbar2 = util2(α20, α21, tc1, tc2, sl, educ+1, 0, age, α30study)
-        Vbar3 = util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, 0, α22, α23)
-        Vbar4 = util4(α4, α40, α41, α42, α43, α44, α45, α46, x3, x4, educ, 0, α24, α25)
-
-
     else
 
         # begin inbounds
         # assume that maximum amount of experience is 30 years.
-        index =  (
-            (x4+1) +
-            (x3)* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        @inbounds u1= u1 .+ δ*Emax[index, EmaxCol["Emax"]]
-        Vbar1 = Vbar1+ δ*Emax[index, EmaxCol["Emax"]]
-
-
-        index =  (
-            (x4+1) +
-            (x3)* x4StateCount +
-            (1)* x4StateCount* x3StateCount +
-            (educ+1*(educ!=22))* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        @inbounds u2= u3 .+ δ*Emax[index, EmaxCol["Emax"]]
-        Vbar2 = Vbar2+ δ*Emax[index, EmaxCol["Emax"]]
-
-        index =  (
-            (x4+1) +
-            (x3+1*(x3!=x3Max))* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        @inbounds u3= u3 .+ δ*Emax[index, EmaxCol["Emax"]]
-        Vbar3 = Vbar3+ δ*Emax[index, EmaxCol["Emax"]]
-
-
-        index =  (
-            (x4+1+1*(x4!=x4Max)) +
-            (x3)* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        @inbounds u4= u4 .+ δ*Emax[index, EmaxCol["Emax"]]
-        Vbar4 = Vbar4+ δ*Emax[index, EmaxCol["Emax"]]
-
+        @inbounds u1= u1 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1  ,x4+1 ]
+        @inbounds u2= u3 .+ δ*Emax[age-17+1+1, educ+1+1*(educ!=22),1+1,x3+1  ,x4+1 ]
+        @inbounds u3= u3 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1+1*(x3!=x3Max),x4+1]
+        @inbounds u4= u4 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1,x4+1+1*(x4!=x4Max)]
         # end
 
         if educ < 22
@@ -432,87 +238,8 @@ end
             value= MeanMaximum([u1, u3, u4])
         end
     end
-    return value, Vbar1, Vbar2, Vbar3, Vbar4
+    return value
 end
-
-
-
-
-
-
-#= value function for type 1: Not obligated to attent conscription =#
-@everywhere function VbarGroup1(α10, α11, α12, α13,
-                α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                α3, α30, α31, α32, α33, α34, α35, α36,
-                α4, α40, α41, α42, α43, α44, α45, α46,
-                δ, epssolve,
-                age, educ, sl, x3, x4,
-                Emax, EmaxCol,
-                ageStateCount, educStateCount, slStateCount, x3StateCount, x4StateCount,
-                x3Max, x4Max)
-
-
-    value= 0 # this is for when no if conditon binds
-    Vbar1, Vbar2, Vbar3, Vbar4 = 0.0, 0.0, 0.0, 0.0
-
-    if age == 65
-
-        Vbar1 = util1(α10, α11, α12, α13, age, educ, 0)
-        # print(Vbar1, "vvvvv\n")
-        Vbar2 = util2(α20, α21, tc1, tc2, sl, educ+1, 0, age, α30study)
-        Vbar3 = util3(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, 0, α22, α23)
-        Vbar4 = util4(α4, α40, α41, α42, α43, α44, α45, α46, x3, x4, educ, 0, α24, α25)
-
-    else
-
-        index =  (
-            (x4+1) +
-            (x3)* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        Vbar1 = Vbar1+ δ*Emax[index, EmaxCol["Emax"]]
-        # print(Vbar1, "vvvvv\n")
-
-
-        index =  (
-            (x4+1) +
-            (x3)* x4StateCount +
-            (1)* x4StateCount* x3StateCount +
-            (educ+1*(educ!=22))* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        Vbar2 = Vbar2+ δ*Emax[index, EmaxCol["Emax"]]
-
-        index =  (
-            (x4+1) +
-            (x3+1*(x3!=x3Max))* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        Vbar3 = Vbar3+ δ*Emax[index, EmaxCol["Emax"]]
-
-
-        index =  (
-            (x4+1+1*(x4!=x4Max)) +
-            (x3)* x4StateCount +
-            (0)* x4StateCount* x3StateCount +
-            (educ)* x4StateCount* x3StateCount* slStateCount +
-            (age+1-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-        );
-        Vbar4 = Vbar4+ δ*Emax[index, EmaxCol["Emax"]]
-
-    end
-
-    return value, Vbar1, Vbar2, Vbar3, Vbar4
-
-end
-
-
-
-
 
 
 
@@ -542,96 +269,29 @@ function solveGroup1(α10, α11, α12, α13,
     State space size= 49*23*2*31*31=           2,166,094
     =#
 
+    Emax= SharedArray{Float64,5}(49, 23, 2, x3Max+1, x4Max+1);
+
+
     ageState  = 65 :-1 :17   # age age of the individual
     educState = 0 :1 :22     # educ number of completed education
     slState   = [0,1]        # sl schooling status of last period
     x3State   = 0 :1 : x3Max     # x3 experience in white-collar
     x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
 
-    ageStateCount  = size(ageState)[1]
-    educStateCount = size(educState)[1]
-    slStateCount   = size(slState)[1]
-    x3StateCount   = size(x3State)[1]
-    x4StateCount   = size(x4State)[1]
-
-    stateSpaceSize = ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount
-    Emax= SharedArray{Float64,2}(stateSpaceSize, 6);
-    EmaxCol = Dict(
-    # "age"       => 1,
-    # "educ"      => 2,
-    # "sl"        => 3,
-    # "x3"        => 4,
-    # "x4"        => 5,
-    "Emax"      => 1,
-    "MAXE"      => 2,
-    "Vbar1"     => 3,
-    "Vbar2"     => 4,
-    "Vbar3"     => 5,
-    "Vbar4"     => 6
-    );
-
 
     for age in ageState
-
         @sync @distributed for educ in educState
-
             for sl in slState, x3 in 0:1:min(30, age-5-educ)
-
                 for x4 in 0:1:min(30, age-5-educ-x3)
-
-
-                    enumerator = (
-                        (x4+1) +
-                        (x3)* x4StateCount +
-                        (sl)* x4StateCount* x3StateCount +
-                        (educ)* x4StateCount* x3StateCount* slStateCount +
-                        (age-17) * x4StateCount* x3StateCount* slStateCount* educStateCount
-                    )
-
-                    random = rand()
-                    if random > 0.9
-
-                        EmaxIn, Vbar1, Vbar2, Vbar3, Vbar4  = valueFunctionGroup1(α10, α11, α12, α13,
+                    @inbounds Emax[age-16, educ+1, sl+1, x3+1, x4+1] =
+                            valueFunctionGroup1(α10, α11, α12, α13,
                                 α20, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
                                 α3, α30, α31, α32, α33, α34, α35, α36,
                                 α4, α40, α41, α42, α43, α44, α45, α46,
-                                δ, epssolve,
+                                δ,
+                                epssolve,
                                 age, educ, sl, x3, x4,
-                                Emax, EmaxCol,
-                                ageStateCount, educStateCount, slStateCount, x3StateCount, x4StateCount,
-                                x3Max, x4Max)
-
-
-                        @inbounds Emax[enumerator, EmaxCol["Emax"]]   = EmaxIn
-                        @inbounds Emax[enumerator, EmaxCol["Vbar1"]]  = Vbar1
-                        @inbounds Emax[enumerator, EmaxCol["Vbar2"]]  = Vbar2
-                        @inbounds Emax[enumerator, EmaxCol["Vbar3"]]  = Vbar3
-                        @inbounds Emax[enumerator, EmaxCol["Vbar4"]]  = Vbar4
-                        @inbounds Emax[enumerator, EmaxCol["MAXE"]]   = max(Vbar1, Vbar2, Vbar3, Vbar4)
-                    else
-
-                        EmaxIn, Vbar1, Vbar2, Vbar3, Vbar4  = VbarGroup1(α10, α11, α12, α13,
-                                α20, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
-                                α3, α30, α31, α32, α33, α34, α35, α36,
-                                α4, α40, α41, α42, α43, α44, α45, α46,
-                                δ, epssolve,
-                                age, educ, sl, x3, x4,
-                                Emax, EmaxCol,
-                                ageStateCount, educStateCount, slStateCount, x3StateCount, x4StateCount,
-                                x3Max, x4Max)
-
-
-                        @inbounds Emax[enumerator, EmaxCol["Emax"]]   = EmaxIn
-                        @inbounds Emax[enumerator, EmaxCol["Vbar1"]]  = Vbar1
-                        @inbounds Emax[enumerator, EmaxCol["Vbar2"]]  = Vbar2
-                        @inbounds Emax[enumerator, EmaxCol["Vbar3"]]  = Vbar3
-                        @inbounds Emax[enumerator, EmaxCol["Vbar4"]]  = Vbar4
-                        @inbounds Emax[enumerator, EmaxCol["MAXE"]]   = max(Vbar1, Vbar2, Vbar3, Vbar4)
-
-
-                    end
-
-
+                                Emax)
                 end
             end #x3
         end #educ
@@ -645,39 +305,32 @@ end
 
 
 
-# test section
-# here, we check whether Emax function is workign perfect or not.
-epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
-epsSolveσ=[ σ1   0.0  0.0   0.0 ;
-            0.0  σ2   0.0   0.0 ;
-            0.0  0.0  σ3    σ34 ;
-            0.0  0.0  σ34   σ4  ] ;
-
-M = 100 ;
-epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
-
-
-for i in 1:3
-    print("Emax Group 1 calculation: \n")
-    start = Dates.unix2datetime(time())
-
-    EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
-                    ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                    α3, ω3T1, α31, α32, α33, α34, α35, 0,
-                    α4, ω4T1, α41, α42, α43, α44, α45, 0,
-                    δ,
-                    epssolve) ;
-
-    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-    print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
-end
-
-
-
-
-
-
-
+# # test section
+# # here, we check whether Emax function is workign perfect or not.
+# epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
+# epsSolveσ=[ σ1   0.0  0.0   0.0 ;
+#             0.0  σ2   0.0   0.0 ;
+#             0.0  0.0  σ3    σ34 ;
+#             0.0  0.0  σ34   σ4  ] ;
+#
+# M = 200 ;
+# epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
+#
+#
+# for i in 1:3
+#     print("Emax Group 1 calculation: \n")
+#     start = Dates.unix2datetime(time())
+#
+#     EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
+#                     ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+#                     α3, ω3T1, α31, α32, α33, α34, α35, 0,
+#                     α4, ω4T1, α41, α42, α43, α44, α45, 0,
+#                     δ,
+#                     epssolve) ;
+#
+#     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+#     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
+# end
 
 
 
@@ -1233,7 +886,8 @@ end#simulate
     It takes moment from data and model Estimation
     and calculate the error
 =#
-function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
+function SMMCalculate(choiceMoment, wageMoment, educatedShare,
+    wageCol, choiceCol, educatedCol)
 
 
     wageWhiteError  = 0.0
@@ -1245,6 +899,8 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
     whiteError      = 0.0
     blueError       = 0.0
     milError        = 0.0
+
+    educatedError   = 0.0
 
 
     for i in 1:size(wageMoment, 1)
@@ -1428,16 +1084,34 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
     end
 
 
+    #= loop to calculated the SMM error of
+    the educated share moments =#
+
+    for i in 1:size(educatedShare,1)
+
+        error = (
+            (
+                educatedShare[i, educatedCol["educatedData"]] -
+                educatedShare[i, educatedCol["educatedSim" ]]
+            ) / educatedShare[i, educatedCol["educatedStdBoot"]]
+        )
+
+        educatedError = educatedError + error^2
+
+    end
+
+
     # #= Printing each error seperately =#
-    # print("\n wageWhiteError  = ", wageWhiteError)
-    # print("\n wageBlueError   = ", wageBlueError )
-    # print("\n homeError       = ", homeError     )
-    # print("\n studyError      = ", studyError    )
-    # print("\n whiteError      = ", whiteError    )
-    # print("\n blueError       = ", blueError     )
-    # print("\n milError        = ", milError      )
-    # print("\n devWhiteError   = ", devWhiteError )
-    # print("\n devBlueError    = ", devBlueError  )
+    # print("\n wageWhiteError  = ", wageWhiteError )
+    # print("\n wageBlueError   = ", wageBlueError  )
+    # print("\n homeError       = ", homeError      )
+    # print("\n studyError      = ", studyError     )
+    # print("\n whiteError      = ", whiteError     )
+    # print("\n blueError       = ", blueError      )
+    # print("\n milError        = ", milError       )
+    # print("\n devWhiteError   = ", devWhiteError  )
+    # print("\n devBlueError    = ", devBlueError   )
+    # print("\n educatedError   = ", educatedError  )
 
 
     #=
@@ -1468,7 +1142,8 @@ function SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
         blueError +
         milError +
         devWhiteError +
-        devBlueError
+        devBlueError +
+        educatedError
     )
 
     return SMMError
@@ -1477,7 +1152,8 @@ end
 ################################################################################
 #= Define estimation Function =#
 
-function estimation(params, choiceMomentData, wageMomentData)
+function estimation(params,
+    choiceMomentData, wageMomentData, educatedShareData)
 
 
     #=****************************************************=#
@@ -1920,15 +1596,15 @@ function estimation(params, choiceMomentData, wageMomentData)
     =#
     wageMoment= Array{Float64,2}(undef, (size(wageMomentData,1),9))
     wageCol = Dict(
-        "age"         => 1,
-        "educated"    => 2,
-        "collar"      => 3,
-        "incomeData"  => 4,
-        "incomeStdBoot" =>5,
-        "devData"     => 6,
-        "devStdBoot"  => 7,
-        "incomeSim"   => 8,
-        "devSim"      => 9
+        "age"             => 1,
+        "educated"        => 2,
+        "collar"          => 3,
+        "incomeData"      => 4,
+        "incomeStdBoot"   =>5,
+        "devData"         => 6,
+        "devStdBoot"      => 7,
+        "incomeSim"       => 8,
+        "devSim"          => 9
     )
     wageMoment[:,1:7]= wageMomentData[:,1:7];
 
@@ -1940,23 +1616,23 @@ function estimation(params, choiceMomentData, wageMomentData)
     =#
     choiceMoment= Array{Float64,2}(undef, (size(choiceMomentData,1),17) )
     choiceCol = Dict(
-        "age"       => 1,
-        "educated"  => 2,
-        "homeData"  => 3,
-        "studyData" => 4,
-        "whiteData" => 5,
-        "blueData"  => 6,
-        "milData"   => 7,
-        "homeStdBoot"  => 8,
-        "studyStdBoot" => 9,
-        "whiteStdBoot" => 10,
-        "blueStdBoot"  => 11,
-        "milStdBoot"   => 12,
-        "homeSim"   => 13,
-        "studySim"  => 14,
-        "whiteSim"  => 15,
-        "blueSim"   => 16,
-        "milSim"    => 17
+        "age"             => 1,
+        "educated"        => 2,
+        "homeData"        => 3,
+        "studyData"       => 4,
+        "whiteData"       => 5,
+        "blueData"        => 6,
+        "milData"         => 7,
+        "homeStdBoot"     => 8,
+        "studyStdBoot"    => 9,
+        "whiteStdBoot"    => 10,
+        "blueStdBoot"     => 11,
+        "milStdBoot"      => 12,
+        "homeSim"         => 13,
+        "studySim"        => 14,
+        "whiteSim"        => 15,
+        "blueSim"         => 16,
+        "milSim"          => 17
     )
     choiceMoment[ :, 1:12] =choiceMomentData[: ,1:12]
 
@@ -1968,6 +1644,22 @@ function estimation(params, choiceMomentData, wageMomentData)
     for i in 3:6
         choiceMoment[(choiceMoment[:,i].<0.01) ,i] .= NaN
     end
+
+    #=
+    generating an Array named educatedShare
+    to store simulated share of educated individuals
+    also we embed data moment in this array
+    educatedShareData is the given educated share moment from data
+    =#
+    educatedShare = Array{Float64,2}(undef, (size(educatedShareData,1),4))
+    educatedCol = Dict(
+        "age"                 => 1,
+        "educatedData"            => 2,
+        "educatedStdBoot"     => 3,
+        "educatedSim"         => 4
+    )
+    educatedShare[:,1:3]= educatedShareData[:,1:3];
+
 
     #=****************************************************=#
     #=
@@ -2052,6 +1744,19 @@ function estimation(params, choiceMomentData, wageMomentData)
 
         end #educated
 
+
+        #= share of educated people in each age between 24 and 32 =#
+        if (age >= 24) & (age <= 32)
+
+            flag = sim[ (sim[:,simCol["age"]].==age) , simCol["educated"]]
+
+            educatedShare[(educatedShare[:,educatedCol["age"]] .== age),
+                educatedCol["educatedSim"]] .= mean(filter(!isnan, flag ))
+        end
+
+
+
+
     end#for age
 
     # for i = 8:12
@@ -2064,25 +1769,26 @@ function estimation(params, choiceMomentData, wageMomentData)
     calculating error = sum squared of percentage distance
     between data moment and moment from model simulation
     =#
-    result = SMMCalculate(choiceMoment, wageMoment, wageCol, choiceCol)
+    result = SMMCalculate(choiceMoment, wageMoment, educatedShare,
+        wageCol, choiceCol, educatedCol)
 
 
-    #=
-    Putting all moment in a vector for calculating jacobian of
-    the moment by changing parameters
-    =#
-    momentSim = [wageMoment[:,6] ; wageMoment[:,7]]
-
-    for i = 8:12
-        momentSim = [momentSim ; choiceMoment[:,i]]
-    end
-
-    momentData = [wageMoment[:,4] ; wageMoment[:,5]]
-    for i = 3:7
-        momentData = [momentData ; choiceMoment[:,i]]
-    end
-
-    moment = momentSim-momentData # (momentSim-momentData)./momentData
+    # #=
+    # Putting all moment in a vector for calculating jacobian of
+    # the moment by changing parameters
+    # =#
+    # momentSim = [wageMoment[:,6] ; wageMoment[:,7]]
+    #
+    # for i = 8:12
+    #     momentSim = [momentSim ; choiceMoment[:,i]]
+    # end
+    #
+    # momentData = [wageMoment[:,4] ; wageMoment[:,5]]
+    # for i = 3:7
+    #     momentData = [momentData ; choiceMoment[:,i]]
+    # end
+    #
+    # moment = momentSim-momentData # (momentSim-momentData)./momentData
 
 
     #=****************************************************=#
@@ -2126,17 +1832,8 @@ function estimation(params, choiceMomentData, wageMomentData)
 
     #= return SMM error calculated =#
     print("\n SMM error = ", result, " ")
-    return result, moment, momentData #, choiceMoment, wageMoment, sim
+    return result #, moment, momentData #, choiceMoment, wageMoment, sim
 end
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2153,6 +1850,8 @@ if ENV["USER"] == "sabouri"
     choiceMomentData = readdlm("/home/sabouri/Labor/DataMoments/choiceMoment2.csv",',') ;
     wageMomentStdBoot= readdlm("/home/sabouri/Labor/DataMoments/wageMomentStdBoot.csv",',')      ;
     choiceMomentStdBoot = readdlm("/home/sabouri/Labor/DataMoments/choiceMomentStdBoot.csv",',') ;
+    educatedShareStdBoot = readdlm("/home/sabouri/Labor/DataMoments/educatedShareStdBoot.csv",',') ;
+
 end
 #= code for reading in Linux operating system =#
 if ENV["USER"] == "ehsan"
@@ -2160,6 +1859,7 @@ if ENV["USER"] == "ehsan"
     choiceMomentData = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMoment2.csv",',')  ;
     wageMomentStdBoot = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/wageMomentStdBoot.csv",',')
     choiceMomentStdBoot = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/choiceMomentStdBoot.csv",',')
+    educatedShareStdBoot = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/educatedShareStdBoot.csv",',')
 end
 #= code for reading in windows operating system =#
 if ENV["USER"] == "claudioq"
@@ -2295,7 +1995,7 @@ den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
 
 
 # tc1T1 = log(exp(tc1T1)*0.5)
-
+## ##
 
 
 
@@ -2314,124 +2014,66 @@ params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
 # params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
 # params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
 
-params = [ # best with delta 0.85
-    16.96551970471428
-    17.087495320596947
-    17.765569229510795
-    17.63093183062897
-    -16.11896442935359
-    16.348606672298743
-    -16.397783415900957
-    17.020095968555523
-    18.324895991496554
-    19.525094599082294
-    19.280589313878444
-    17.772993577046915
-    18.16441260505036
-    18.198369164437132
-    0.14260458308170892
-    0.1565705587265417
-    0.10909124100153282
-    -16.716398331308056
-    14.721644712082858
-    14.668529869321464
-    14.171034583191123
-    15.013032070101813
-    14.895886514810108
-    0.13178983521230703
-    0.09009602186770398
-    0.038715196374362174
-    -0.0025923345555815013
-    -0.0034530827265448908
-    16.586103615432854
-    15.839056493436935
-    16.142571820810034
-    16.515301717018495
-    0.05544525149258332
-    0.03177166849760085
-    0.11285595481156394
-    -0.002594761142369676
-    -0.003479359289323288
-    15.330583052549233
-    15.68663969553485
-    15.40221162824455
-    33.648429554399726
-    31.060143468744194
-    0.6052411518591181
-    0.33358331900512544
-    0.176667715014411
-    37.04428067967918
-    4.9428272478048765
-    2.088265848175212
-    0.6679351060199874
-    1.4204702356274501
-    0.5282849363958297
-    -0.09989650249149494
-    1.4618354807195342
-    1.6715824197384215
-    2.6657136461816493
-    2.6657136461816493
-]
-
 
 params = [ # currently best with delta 0.92
-    16.98097467419461
-    16.560207516509433
-    17.99171106144807
-    17.749526796563664
-    -15.741539348137348
-    15.952109358408627
-    -17.115103626107548
-    16.674374036598497
-    18.384032187765104
-    19.25509466126813
-    20.32918072855677
-    18.48560145701057
-    18.90966962347321
-    18.034777579093067
-    0.1512464572057799
-    0.168684741147483
-    0.10642921174234166
-    -17.094591484258533
-    14.567150290608941
-    13.990790603299294
-    14.089580499769301
-    14.92943293765211
-    14.899693013256345
-    0.1339419833468577
-    0.09673717786415598
-    0.0448392938919062
-    -0.003909426192436945
-    -0.005609548496107689
-    16.49765044517912
-    15.801014069735892
-    15.93661090134426
-    16.501300671977454
-    0.05715776812875273
-    0.025782989301047388
-    0.11526431234210582
-    -0.00424947483578215
-    -0.003575233049214043
-    15.29947444224824
-    15.078674180989376
-    15.210351154306565
-    33.91773874470704
-    29.80294273135244
-    0.6066423535281613
-    0.3367278642852969
-    0.17962185902392658
-    38.36737428462783
-    4.934714121971828
-    2.1956861815740374
-    0.6641777768266696
-    1.4338968735134594
-    0.5407704615781991
-    -0.10208402885718648
-    1.4659137275431988
-    1.7352724663980448
-    3.3203858154322514
-    2.7694537077837222
+    16.977427762767146
+    17.124198305983242
+    18.112768880251306
+    17.405779498550512
+    -15.374251010133499
+    16.196912704479622
+    -16.975962857180164
+    16.658490529147635
+    18.365401616248768
+    19.310326039132626
+    19.45474133643033
+    18.169344908477697
+    18.694002108633498
+    17.734845780487916
+    0.15545186113462314
+    0.16739708380148974
+    0.10751366680126478
+    -16.48569354966655
+    14.849507545952035
+    14.077468409225368
+    14.296409209919869
+    14.892571960146052
+    14.888351785749448
+    0.13129835014735813
+    0.09508592540297328
+    0.04011806336968076
+    -0.003884567092176147
+    -0.006085833033566491
+    16.57295295425023
+    15.93580491107034
+    16.17169921053567
+    16.41358946405049
+    0.058652517639244
+    0.021910602248525965
+    0.1137994235391814
+    -0.004684525699078356
+    -0.003409675463463287
+    15.708318191393749
+    15.878301194491158
+    16.4760923148098
+    34.48783631365138
+    32.38246210939303
+    0.6098296576830846
+    0.3164647832591771
+    0.18263162418895731
+    39.95342695005997
+    5.144232545162053
+    2.14458805653507
+    0.6959677734614474
+    1.4711745917163095
+    0.5621243267590588
+    -0.10154802888415038
+    1.469949376248409
+    1.7394753074461593
+    2.694786342145585
+    2.892333499638035
 ]
+
 
 
 
@@ -2439,7 +2081,8 @@ params = [ # currently best with delta 0.92
 print("\nEstimation started:")
 start = Dates.unix2datetime(time())
 
-result, moment, momentData = estimation(params, choiceMomentStdBoot, wageMomentStdBoot) ;
+result = estimation(params,
+    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
 
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
 print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
@@ -2513,8 +2156,10 @@ println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 #= ********************************************** =#
 #= LeastSquaresOptim.jl =#
 optimization = LeastSquaresOptim.optimize(
-                x -> estimation(x, choiceMomentStdBoot, wageMomentStdBoot)[1]
+                x -> estimation(x,
+                    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)[1]
                 ,params
+                ,iterations = 3000
                 )
 println(optimization.minimizer)
 println(optimization)
