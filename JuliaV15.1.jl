@@ -227,7 +227,7 @@ end
         # begin inbounds
         # assume that maximum amount of experience is 30 years.
         @inbounds u1= u1 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1  ,x4+1 ]
-        @inbounds u2= u3 .+ δ*Emax[age-17+1+1, educ+1+1*(educ!=22),1+1,x3+1  ,x4+1 ]
+        @inbounds u2= u2 .+ δ*Emax[age-17+1+1, educ+1+1*(educ!=22),1+1,x3+1  ,x4+1 ]
         @inbounds u3= u3 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1+1*(x3!=x3Max),x4+1]
         @inbounds u4= u4 .+ δ*Emax[age-17+1+1, educ+1,             0+1,x3+1,x4+1+1*(x4!=x4Max)]
         # end
@@ -305,35 +305,35 @@ end
 
 
 
-# # test section
-# # here, we check whether Emax function is workign perfect or not.
-# epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
-# epsSolveσ=[ σ1   0.0  0.0   0.0 ;
-#             0.0  σ2   0.0   0.0 ;
-#             0.0  0.0  σ3    σ34 ;
-#             0.0  0.0  σ34   σ4  ] ;
-#
-# M = 200 ;
-# epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
-#
-#
-# for i in 1:3
-#     print("Emax Group 1 calculation: \n")
-#     start = Dates.unix2datetime(time())
-#
-#     EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
-#                     ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-#                     α3, ω3T1, α31, α32, α33, α34, α35, 0,
-#                     α4, ω4T1, α41, α42, α43, α44, α45, 0,
-#                     δ,
-#                     epssolve) ;
-#
-#     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-#     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
-# end
+# test section
+# here, we check whether Emax function is workign perfect or not.
+epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
+epsSolveσ=[ σ1   0.0  0.0   0.0 ;
+            0.0  σ2   0.0   0.0 ;
+            0.0  0.0  σ3    σ34 ;
+            0.0  0.0  σ34   σ4  ] ;
+
+M = 200 ;
+epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
 
 
+for i in 1:3
+    print("Emax Group 1 calculation: \n")
+    start = Dates.unix2datetime(time())
 
+    EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
+                    ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+                    α3, ω3T1, α31, α32, α33, α34, α35, 0,
+                    α4, ω4T1, α41, α42, α43, α44, α45, 0,
+                    δ,
+                    epssolve) ;
+
+    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+    print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
+end
+#
+#
+# EmaxOld = EmaxGroup1
 
 
 
@@ -386,7 +386,7 @@ conscription goup 2: obligated to attend conscription
 
         u1= u1 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1           ,x4+1           ,x5+1          ]
 
-        u2= u3 .+ δ*Emax[age-16+1 ,educ+1+1*(educ!=22),1+1 ,x3+1           ,x4+1           ,x5+1          ]
+        u2= u2 .+ δ*Emax[age-16+1 ,educ+1+1*(educ!=22),1+1 ,x3+1           ,x4+1           ,x5+1          ]
 
         u3= u3 .+ δ*Emax[age-16+1 ,educ+1,             0+1 ,x3+1+1*(x3!=x3Max),x4+1           ,x5+1       ]
 
@@ -2064,7 +2064,7 @@ params = [ # currently best with delta 0.92
     39.95342695005997
     5.144232545162053
     2.14458805653507
-    0.6959677734614474
+    1.0689516601921711
     1.4711745917163095
     0.5621243267590588
     -0.10154802888415038
