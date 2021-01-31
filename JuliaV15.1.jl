@@ -16,6 +16,24 @@
 
 ****************************************************=#
 
+#=
+    Solving dynamic programming
+    Two main groups of individuals:
+    conscription group 1 : Not obligated to attend conscription
+         Alternatives: 4 mutually exclusive choices
+         choice 1 : stay home
+         choice 2 : study
+         choice 3 : white-collar occupation
+         choice 4 : blue-collar occupation
+
+    conscription group 2 : obligated to attend conscription
+         Alternatives: 5 mutually exclusive choices
+         choice 1 : stay home
+         choice 2 : study
+         choice 3 : white-collar occupation
+         choice 4 : blue-collar occupation
+         choice 5 : compulsory military service
+=#
 
 #=
     The codes needed for running on the server
@@ -46,26 +64,6 @@ result = 1.0e50
 if ENV["USER"] == "sabouri"
     writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result )
 end
-
-#################################################################################
-#=
-    Solving dynamic programming
-    Two main groups of individuals:
-    conscription group 1 : Not obligated to attend conscription
-         Alternatives: 4 mutually exclusive choices
-         choice 1 : stay home
-         choice 2 : study
-         choice 3 : white-collar occupation
-         choice 4 : blue-collar occupation
-
-    conscription group 2 : obligated to attend conscription
-         Alternatives: 5 mutually exclusive choices
-         choice 1 : stay home
-         choice 2 : study
-         choice 3 : white-collar occupation
-         choice 4 : blue-collar occupation
-         choice 5 : compulsory military service
-=#
 
 using Pkg
 
@@ -305,32 +303,32 @@ end
 
 
 
-# test section
-# here, we check whether Emax function is workign perfect or not.
-epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
-epsSolveσ=[ σ1   0.0  0.0   0.0 ;
-            0.0  σ2   0.0   0.0 ;
-            0.0  0.0  σ3    σ34 ;
-            0.0  0.0  σ34   σ4  ] ;
-
-M = 200 ;
-epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
-
-
-for i in 1:3
-    print("Emax Group 1 calculation: \n")
-    start = Dates.unix2datetime(time())
-
-    EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
-                    ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                    α3, ω3T1, α31, α32, α33, α34, α35, 0,
-                    α4, ω4T1, α41, α42, α43, α44, α45, 0,
-                    δ,
-                    epssolve) ;
-
-    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-    print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
-end
+# # test section
+# # here, we check whether Emax function is workign perfect or not.
+# epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
+# epsSolveσ=[ σ1   0.0  0.0   0.0 ;
+#             0.0  σ2   0.0   0.0 ;
+#             0.0  0.0  σ3    σ34 ;
+#             0.0  0.0  σ34   σ4  ] ;
+#
+# M = 200 ;
+# epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
+#
+#
+# for i in 1:5
+#     print("Emax Group 1 calculation: \n")
+#     start = Dates.unix2datetime(time())
+#
+#     EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
+#                     ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+#                     α3, ω3T1, α31, α32, α33, α34, α35, 0,
+#                     α4, ω4T1, α41, α42, α43, α44, α45, 0,
+#                     δ,
+#                     epssolve) ;
+#
+#     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+#     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
+# end
 #
 #
 # EmaxOld = EmaxGroup1
@@ -533,8 +531,8 @@ end#
 function simulateGroup1(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                     α3, α30, α31, α32, α33, α34, α35, α36,
-                    α40, α41, α42, α43, α44, α45, α46,
-                    α50, α51, α52,
+                    α4, α40, α41, α42, α43, α44, α45, α46,
+                    α50, α51, α52, δ,
                     σ1, σ2, σ3, σ4, σ34 ,σ5,
                     N, Emax, weights, Seed)
 
@@ -689,8 +687,8 @@ end#simulate
 function simulateGroup2(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                     α3, α30, α31, α32, α33, α34, α35, α36,
-                    α40, α41, α42, α43, α44, α45, α46,
-                    α50, α51, α52,
+                    α4, α40, α41, α42, α43, α44, α45, α46,
+                    α50, α51, α52, δ,
                     σ1, σ2, σ3, σ4, σ34 ,σ5,
                     N, Emax, weights, Seed)
 
@@ -1450,8 +1448,8 @@ function estimation(params,
         simGroup1T1= simulateGroup1(ω1T1, α11, α12, α13,
                                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T1, α31, α32, α33, α34, α35, α36,
-                                    ω4T1, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T1, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T1, EmaxGroup1T1, weightsT1, 1111)
         simGroup1T1[:, simCol["type"]] .= 1
@@ -1470,8 +1468,8 @@ function estimation(params,
         simGroup1T2= simulateGroup1(ω1T2, α11, α12, α13,
                                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T2, α31, α32, α33, α34, α35, α36,
-                                    ω4T2, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T2, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T2, EmaxGroup1T2, weightsT2, 2222)
         simGroup1T2[:, simCol["type"]] .= 2
@@ -1490,8 +1488,8 @@ function estimation(params,
         simGroup1T3= simulateGroup1(ω1T3, α11, α12, α13,
                                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T3, α31, α32, α33, α34, α35, α36,
-                                    ω4T3, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T3, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T3, EmaxGroup1T3, weightsT3, 1345)
         simGroup1T3[:, simCol["type"]] .= 3
@@ -1511,8 +1509,8 @@ function estimation(params,
         simGroup1T4= simulateGroup1(ω1T4, α11, α12, α13,
                                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T4, α31, α32, α33, α34, α35, α36,
-                                    ω4T4, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T4, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T4, EmaxGroup1T4, weightsT4, 5432)
         simGroup1T4[:, simCol["type"]] .= 4
@@ -1528,8 +1526,8 @@ function estimation(params,
         simGroup2T1= simulateGroup2(ω1T1, α11, α12, α13,
                                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T1, α31, α32, α33, α34, α35, α36,
-                                    ω4T1, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T1, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T1, EmaxGroup2T1, weightsT1, 3333)
         simGroup2T1[:, simCol["type"]] .= 1
@@ -1541,8 +1539,8 @@ function estimation(params,
         simGroup2T2= simulateGroup2(ω1T2, α11, α12, α13,
                                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T2, α31, α32, α33, α34, α35, α36,
-                                    ω4T2, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T2, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T2, EmaxGroup2T2, weightsT2, 4444)
         simGroup2T2[:, simCol["type"]] .= 2
@@ -1555,8 +1553,8 @@ function estimation(params,
         simGroup2T3= simulateGroup2(ω1T3, α11, α12, α13,
                                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T3, α31, α32, α33, α34, α35, α36,
-                                    ω4T3, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T3, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T3, EmaxGroup2T3, weightsT3, 5234)
         simGroup2T3[:, simCol["type"]] .= 3
@@ -1569,8 +1567,8 @@ function estimation(params,
         simGroup2T4= simulateGroup2(ω1T4, α11, α12, α13,
                                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T4, α31, α32, α33, α34, α35, α36,
-                                    ω4T4, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52,
+                                α4, ω4T4, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T4, EmaxGroup2T4, weightsT4, 7764)
         simGroup2T4[:, simCol["type"]] .= 4
@@ -1982,8 +1980,6 @@ den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
 
 
 
-
-
 δ = 0.7937395498108646 ;      # discount factor
 
 #= New parameters in the model =#
@@ -1994,84 +1990,197 @@ den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
 α30study = -log(1.12e7)
 
 
-# tc1T1 = log(exp(tc1T1)*0.5)
 ## ##
 
 
 
-params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
-        ω2T1, ω2T2, ω2T3, ω2T4,
-        α21, tc1T1, tc2, α22, α23, α25, α30study,
-        α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35,
-            ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
-        α50, α51, α52,
-        σ1, σ2, σ3, σ4, σ34 ,σ5,
-        πE1T1exp, πE1T2exp, πE1T3exp,
-        πE2T1exp, πE2T2exp, πE2T3exp,
-        π1T1exp, π1T2exp, π1T3exp, π1T4exp  ] ;
 
 
-# params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
-# params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
 
 
-params = [ # currently best with delta 0.92
-    16.977427762767146
-    17.124198305983242
-    18.112768880251306
-    17.405779498550512
-    -15.374251010133499
-    16.196912704479622
-    -16.975962857180164
-    16.658490529147635
-    18.365401616248768
-    19.310326039132626
-    19.45474133643033
-    18.169344908477697
-    18.694002108633498
-    17.734845780487916
-    0.15545186113462314
-    0.16739708380148974
-    0.10751366680126478
-    -16.48569354966655
-    14.849507545952035
-    14.077468409225368
-    14.296409209919869
-    14.892571960146052
-    14.888351785749448
-    0.13129835014735813
-    0.09508592540297328
-    0.04011806336968076
-    -0.003884567092176147
-    -0.006085833033566491
-    16.57295295425023
-    15.93580491107034
-    16.17169921053567
-    16.41358946405049
-    0.058652517639244
-    0.021910602248525965
-    0.1137994235391814
-    -0.004684525699078356
-    -0.003409675463463287
-    15.708318191393749
-    15.878301194491158
-    16.4760923148098
-    34.48783631365138
-    32.38246210939303
-    0.6098296576830846
-    0.3164647832591771
-    0.18263162418895731
-    39.95342695005997
-    5.144232545162053
-    2.14458805653507
-    1.0689516601921711
-    1.4711745917163095
-    0.5621243267590588
-    -0.10154802888415038
-    1.469949376248409
-    1.7394753074461593
-    2.694786342145585
-    2.892333499638035
+
+
+
+
+
+
+
+# # parameters in the utility functions
+# #**********************
+# ω1T1 = 17.01236860868671     ;   # the intercept of staying home α10 for type 1
+# ω1T2 = 16.80220123598417       ;   # the intercept of staying home α10 for type 2
+# ω1T3 = 18.101115086202267      ;   # the intercept of staying home α10 for type 3
+# ω1T4 = 17.318684429739754      ;   # the intercept of staying home α10 for type 4
+#
+# #**********************
+# ω2T1 = 16.48129586002007      ;    # the intercept of studying for type 1
+# ω2T2 = 18.137250774594587     ;    # the intercept of studying for type 2
+# ω2T3 = 19.377387203462717      ;    # the intercept of studying for type 3
+# ω2T4 = 19.738135594293446      ;    # the intercept of studying for type 4
+#
+# α21 = log(8.251957709656079e7)     ;    # study in (t-1)?
+# tc1T1 = log(1.7908930961649176e8)    ;    # education >= 12?
+# # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
+# # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
+# # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
+# tc2 = log(5.730208744183692e7)     ;    # education >= 16?
+#
+# α22 = 0.15319803518449737 # reward of getting diploma
+# α23 = 0.1673486313229665 # reward of graduating college
+#
+# # α24 = 0.137 # reward of getting diploma
+# α25 = 0.11018985798785595 # reward of graduating college
+#
+#
+# #**********************
+# #= occupational choices: 3=white, 4=blue collar =#
+# α3, α4 = log(3.1572583053788496e6)   , 0 ;          # the intercept outside exp()
+#
+# #= the intercept inside exp() for type 1 =#
+# ω3T1, ω4T1 = 14.061564284889846   , 16.547926589269313    ;
+# #= the intercept inside exp() for type 2 =#
+# ω3T2, ω4T2 = 15.100369559956459   ,  15.963697465203543  ;
+# #= the intercept inside exp() for type 3 =#
+# ω3T3, ω4T3 = 14.638045918179062   , 16.012170936180958   ;
+# #= the intercept inside exp() for type 4 =#
+# ω3T4, ω4T4 = 14.700031826971303   , 16.260410696077926   ;
+#
+#
+# #**********************
+# #= share of each type for those education less than 10 in 15 years old =#
+# πE1T1 = 0.9418304007617678
+# πE1T2 = 0.0398181373537941
+# πE1T3 = 0.013729812137384991
+# πE1T4 = 1- πE1T1- πE1T2- πE1T3
+#
+# # den = 1/(1+πE1T1+πE1T2+πE1T3)
+# πE1T1exp = log(πE1T1/πE1T4)
+# πE1T2exp = log(πE1T2/πE1T4)
+# πE1T3exp = log(πE1T3/πE1T4)
+#
+#
+# #= share of each type for those education equalls 10 in 15 years old =#
+# πE2T1 = 0.5428268801717322
+# πE2T2 = 0.22049100659282447
+# πE2T3 = 0.11228664060393663
+# πE2T4 = 1- πE2T1- πE2T2- πE2T3
+#
+# # den = 1/(1-0.5428268801717322-0.22049100659282447-0.11228664060393663)
+# πE2T1exp = log(πE2T1/πE2T4)
+# πE2T2exp = log(πE2T2/πE2T4)
+# πE2T3exp = log(πE2T3/πE2T4)
+#
+#
+#
+# #**********************
+# #= education coefficients =#
+# α31, α41 =  0.12988121571957434 , 0.05875448225958381 ;
+# #= experience in white collar =#
+# α32, α42 = 0.09376990725285181 , 0.02313462654530423 ;
+# #= experience in blue collar =#
+# α33, α43 = 0.052302536609589 , 0.11392481791539259 ;
+# #= experience^2 in white collar =#
+# α34, α44 = -0.004745355193469356 , -0.004933553337469315 ;
+# #= experience^2 in blue collar =#
+# α35, α45 = -0.005891123236720835 , -0.0035162316835964857 ;
+#
+# #= entry cost of without experience =#
+# # α36, α46 = 0.0 , 0.0 ;
+#
+# #**********************
+# α50 = 15.969795443533842 # intercept in util5 (conscription)
+# α51 = log(1.313564992722831e7) ;    # util5 coeff for if educ >= 12
+# α52 = log(5.403804344709424e7) ;     # util5 coeff for if educ >= 16
+#
+# #**********************
+# #= Variance-covariance of shocks =#
+# σ1 = log(1.0805430552997179e15) ;  # variance of ε1 - staying home
+# σ2 = log(8.277143696562533e13) ;  # variance of ε2 - studying
+# σ3 = 0.6089796764947927 ;    # variance of ε3 - white collar
+# σ4 = 0.3156394688613694 ;    # variance of ε4 - blue collar
+# σ34 = 0.182718181403573 ;    # Covariance of white and blue collar shocks
+#
+# σ5 = log(1.238333261911126e19) ;
+#
+# # π1 = 0.79 ;     # share of individuals type 1
+# π1T1exp = -log((1/0.8133144932575312)-1)
+# π1T2exp = -log((1/0.854424210654026)-1)
+# π1T3exp = -log((1/0.939382702067374)-1)
+# π1T4exp = -log((1/0.949880934193405)-1)
+#
+#
+# δ = 0.92 ;      # discount factor
+#
+# #= New parameters in the model =#
+# α11 = -log(4.306492688224627e6)  # if age<=18
+# α12 = log(9.285576218815763e6)                # if educ >=13
+# α13 = -log(2.839815713751588e7)                # if age>=30
+#
+# α30study = -log(1.2664274605780955e7)
+
+
+
+# Params = readdlm("C:/Users/claudioq/Dropbox/Labor/Codes/parameters.csv")
+# Params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
+
+
+Params = [ # currently best with delta 0.92
+    17.01236860868671
+    16.80220123598417
+    18.101115086202267
+    17.318684429739754
+    -15.275634369363559
+    16.04397280995114
+    -17.16183481150193
+    16.48129586002007
+    18.137250774594587
+    19.377387203462717
+    19.738135594293446
+    18.22854612129429
+    19.00339517578263
+    17.86384761107092
+    0.15319803518449737
+    0.1673486313229665
+    0.11018985798785595
+    -16.354295564276697
+    14.965214584078668
+    14.061564284889846
+    15.100369559956459
+    14.638045918179062
+    14.700031826971303
+    0.12988121571957434
+    0.09376990725285181
+    0.052302536609589
+    -0.004745355193469356
+    -0.005891123236720835
+    16.547926589269313
+    15.963697465203543
+    16.012170936180958
+    16.260410696077926
+    0.05875448225958381
+    0.02313462654530423
+    0.11392481791539259
+    -0.004933553337469315
+    -0.0035162316835964857
+    15.969795443533842
+    16.39084046044319
+    17.80519886475861
+    34.616240138651904
+    32.04710415362266
+    0.6089796764947927
+    0.3156394688613694
+    0.182718181403573
+    43.9628830987124
+    8.000610230879746
+    2.153570791432335
+    1.0888178075890353
+    1.473324662047759
+    0.5723911216226036
+    -0.1024108930121635
+    1.4716924463776122
+    1.7697309642723555
+    2.7406426628373497
+    2.941935153591848
 ]
 
 
@@ -2081,7 +2190,7 @@ params = [ # currently best with delta 0.92
 print("\nEstimation started:")
 start = Dates.unix2datetime(time())
 
-result = estimation(params,
+result = estimation(Params,
     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
 
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
@@ -2095,6 +2204,169 @@ print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 # writedlm( "/home/sabouri/thesis/moments/data/choiceMoment.csv",  choiceMoment, ',');
 # writedlm( "/home/sabouri/thesis/moments/data/wageMoment.csv",  wageMoment, ',');
 
+
+## ##
+
+function ParametersWide(Params)
+    ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
+            ω2T1, ω2T2, ω2T3, ω2T4,
+            α21, tc1T1, tc2, α22, α23, α25, α30study,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35,
+                ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
+            α50, α51, α52,
+            σ1, σ2, σ3, σ4, σ34 ,σ5,
+            πE1T1exp, πE1T2exp, πE1T3exp,
+            πE2T1exp, πE2T2exp, πE2T3exp,
+            π1T1exp, π1T2exp, π1T3exp, π1T4exp  = Params
+
+    α21 = exp(α21)
+    tc1T1 = exp(tc1T1)
+    tc2 = exp(tc2)
+    α3 = exp(α3)
+    α51 = exp(α51)
+    α52 = exp(α52)
+    σ1 = exp(σ1)
+    σ2 = exp(σ2)
+    σ5 = exp(σ5)
+    α11 = exp(-α11)
+    α12 = exp(α12)
+    α13 = exp(-α13)
+    α30study = exp(-α30study)
+
+    πE1T1 = exp(πE1T1exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T2 = exp(πE1T2exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T3 = exp(πE1T3exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T4 = exp(0)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+
+    πE2T1 = exp(πE2T1exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T2 = exp(πE2T2exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T3 = exp(πE2T3exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T4 = exp(0)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+
+    π1T1 = exp(π1T1exp) / (1+exp(π1T1exp))
+    π1T2 = exp(π1T2exp) / (1+exp(π1T2exp))
+    π1T3 = exp(π1T3exp) / (1+exp(π1T3exp))
+    π1T4 = exp(π1T4exp) / (1+exp(π1T4exp))
+
+
+    output = """
+    # parameters in the utility functions
+    #**********************
+    ω1T1 = $ω1T1     ;   # the intercept of staying home α10 for type 1
+    ω1T2 = $ω1T2       ;   # the intercept of staying home α10 for type 2
+    ω1T3 = $ω1T3      ;   # the intercept of staying home α10 for type 3
+    ω1T4 = $ω1T4      ;   # the intercept of staying home α10 for type 4
+
+    #**********************
+    ω2T1 = $ω2T1      ;    # the intercept of studying for type 1
+    ω2T2 = $ω2T2     ;    # the intercept of studying for type 2
+    ω2T3 = $ω2T3      ;    # the intercept of studying for type 3
+    ω2T4 = $ω2T4      ;    # the intercept of studying for type 4
+
+    α21 = log($α21)     ;    # study in (t-1)?
+    tc1T1 = log($tc1T1)    ;    # education >= 12?
+    # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
+    # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
+    # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
+    tc2 = log($tc2)     ;    # education >= 16?
+
+    α22 = $α22 # reward of getting diploma
+    α23 = $α23 # reward of graduating college
+
+    # α24 = 0.137 # reward of getting diploma
+    α25 = $α25 # reward of graduating college
+
+
+    #**********************
+    #= occupational choices: 3=white, 4=blue collar =#
+    α3, α4 = log($α3)   , 0 ;          # the intercept outside exp()
+
+    #= the intercept inside exp() for type 1 =#
+    ω3T1, ω4T1 = $ω3T1   , $ω4T1    ;
+    #= the intercept inside exp() for type 2 =#
+    ω3T2, ω4T2 = $ω3T2   ,  $ω4T2  ;
+    #= the intercept inside exp() for type 3 =#
+    ω3T3, ω4T3 = $ω3T3   , $ω4T3   ;
+    #= the intercept inside exp() for type 4 =#
+    ω3T4, ω4T4 = $ω3T4   , $ω4T4   ;
+
+
+    #**********************
+    #= share of each type for those education less than 10 in 15 years old =#
+    πE1T1 = $πE1T1
+    πE1T2 = $πE1T2
+    πE1T3 = $πE1T3
+    πE1T4 = 1- πE1T1- πE1T2- πE1T3
+
+    # den = 1/(1+πE1T1+πE1T2+πE1T3)
+    πE1T1exp = log(πE1T1/πE1T4)
+    πE1T2exp = log(πE1T2/πE1T4)
+    πE1T3exp = log(πE1T3/πE1T4)
+
+
+    #= share of each type for those education equalls 10 in 15 years old =#
+    πE2T1 = $πE2T1
+    πE2T2 = $πE2T2
+    πE2T3 = $πE2T3
+    πE2T4 = 1- πE2T1- πE2T2- πE2T3
+
+    # den = 1/(1-$πE2T1-$πE2T2-$πE2T3)
+    πE2T1exp = log(πE2T1/πE2T4)
+    πE2T2exp = log(πE2T2/πE2T4)
+    πE2T3exp = log(πE2T3/πE2T4)
+
+
+
+    #**********************
+    #= education coefficients =#
+    α31, α41 =  $α31 , $α41 ;
+    #= experience in white collar =#
+    α32, α42 = $α32 , $α42 ;
+    #= experience in blue collar =#
+    α33, α43 = $α33 , $α43 ;
+    #= experience^2 in white collar =#
+    α34, α44 = $α34 , $α44 ;
+    #= experience^2 in blue collar =#
+    α35, α45 = $α35 , $α45 ;
+
+    #= entry cost of without experience =#
+    # α36, α46 = 0.0 , 0.0 ;
+
+    #**********************
+    α50 = $α50 # intercept in util5 (conscription)
+    α51 = log($α51) ;    # util5 coeff for if educ >= 12
+    α52 = log($α52) ;     # util5 coeff for if educ >= 16
+
+    #**********************
+    #= Variance-covariance of shocks =#
+    σ1 = log($σ1) ;  # variance of ε1 - staying home
+    σ2 = log($σ2) ;  # variance of ε2 - studying
+    σ3 = $σ3 ;    # variance of ε3 - white collar
+    σ4 = $σ4 ;    # variance of ε4 - blue collar
+    σ34 = $σ34 ;    # Covariance of white and blue collar shocks
+
+    σ5 = log($σ5) ;
+
+    # π1 = 0.79 ;     # share of individuals type 1
+    π1T1exp = -log((1/$π1T1)-1)
+    π1T2exp = -log((1/$π1T2)-1)
+    π1T3exp = -log((1/$π1T3)-1)
+    π1T4exp = -log((1/$π1T4)-1)
+
+
+    δ = 0.92 ;      # discount factor
+
+    #= New parameters in the model =#
+    α11 = -log($α11)  # if age<=18
+    α12 = log($α12)                # if educ >=13
+    α13 = -log($α13)                # if age>=30
+
+    α30study = -log($α30study)
+
+    """
+
+    print("\n\n\n",output)
+end
 
 
 
@@ -2158,7 +2430,7 @@ println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 optimization = LeastSquaresOptim.optimize(
                 x -> estimation(x,
                     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)[1]
-                ,params
+                ,Params
                 ,iterations = 3000
                 )
 println(optimization.minimizer)
