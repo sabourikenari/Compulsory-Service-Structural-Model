@@ -1099,17 +1099,17 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
     end
 
 
-    #= Printing each error seperately =#
-    print("\n wageWhiteError  = ", wageWhiteError )
-    print("\n wageBlueError   = ", wageBlueError  )
-    print("\n homeError       = ", homeError      )
-    print("\n studyError      = ", studyError     )
-    print("\n whiteError      = ", whiteError     )
-    print("\n blueError       = ", blueError      )
-    print("\n milError        = ", milError       )
-    print("\n devWhiteError   = ", devWhiteError  )
-    print("\n devBlueError    = ", devBlueError   )
-    print("\n educatedError   = ", educatedError  )
+    # #= Printing each error seperately =#
+    # print("\n wageWhiteError  = ", wageWhiteError )
+    # print("\n wageBlueError   = ", wageBlueError  )
+    # print("\n homeError       = ", homeError      )
+    # print("\n studyError      = ", studyError     )
+    # print("\n whiteError      = ", whiteError     )
+    # print("\n blueError       = ", blueError      )
+    # print("\n milError        = ", milError       )
+    # print("\n devWhiteError   = ", devWhiteError  )
+    # print("\n devBlueError    = ", devBlueError   )
+    # print("\n educatedError   = ", educatedError  )
 
 
     #=
@@ -1788,6 +1788,21 @@ function estimation(params,
     #
     # moment = momentSim-momentData # (momentSim-momentData)./momentData
 
+    #=****************************************************=#
+    #=
+        Set some constraint for the moment estimated after age 36
+        where we do not see the choices of men in the data for the
+        specified cohort.
+        1. share of men working in the white-collar occupations not
+           far away from 0.12
+    =#
+
+    whiteConstraintError = constraintError(sim, simCol)
+
+    # print("\n constraintError= ",whiteConstraintError)
+    result = result + whiteConstraintError
+
+
 
     #=****************************************************=#
     if ENV["USER"] == "ehsan"
@@ -1795,7 +1810,7 @@ function estimation(params,
         writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
     end
     if ENV["USER"]=="sabouri"
-        if (result < 1.0e50) #bestResult[1])
+        if (result < bestResult[1])
         ## Server ##
         writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
         writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
@@ -1835,6 +1850,35 @@ end
 
 
 
+function constraintError(sim,simCol)
+
+    whiteConstraintError = 0.0
+    studyConstraintError = 0.0
+
+    for age in 40:55
+
+        flag2 = [
+            count(
+                x -> x == i,
+                sim[(sim[:, simCol["age"]].==age)
+                , simCol["choice"]],
+                ) for i = 1:5
+        ]
+
+        flag2 = flag2 / sum(flag2)
+
+        error = ((flag2[3]-0.12)/0.004)
+        whiteConstraintError = whiteConstraintError + error^2
+
+        error = (flag2[2]-0)/0.005
+        studyConstraintError = studyConstraintError + error^2
+
+
+    end
+
+    output = whiteConstraintError + studyConstraintError
+    return output
+end
 
 
 
@@ -2006,25 +2050,25 @@ end
 
 # parameters in the utility functions
 #**********************
-ω1T1 = 17.01236860868671     ;   # the intercept of staying home α10 for type 1
+ω1T1 = 17.21236860868671     ;   # the intercept of staying home α10 for type 1
 ω1T2 = 16.80220123598417       ;   # the intercept of staying home α10 for type 2
 ω1T3 = 17.861115086202267      ;   # the intercept of staying home α10 for type 3
 ω1T4 = 17.318684429739754      ;   # the intercept of staying home α10 for type 4
 
 #**********************
-ω2T1 = 16.48129586002007      ;    # the intercept of studying for type 1
+ω2T1 = 16.32129586002007      ;    # the intercept of studying for type 1
 ω2T2 = 18.137250774594587     ;    # the intercept of studying for type 2
 ω2T3 = 19.377387203462717      ;    # the intercept of studying for type 3
 ω2T4 = 19.738135594293446      ;    # the intercept of studying for type 4
 
-α21 = log(8.251957709656079e7)     ;    # study in (t-1)?
-tc1T1 = log(1.7908930961649176e8)    ;    # education >= 12?
+α21 = log(8.451957709656079e7)     ;    # study in (t-1)?
+tc1T1 = log(1.9908930961649176e8)    ;    # education >= 12?
 # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
 # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
 # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
-tc2 = log(5.730208744183692e7)     ;    # education >= 16?
+tc2 = log(5.930208744183692e7)     ;    # education >= 16?
 
-α22 = 0.12319803518449737 # reward of getting diploma
+α22 = 0.10319803518449737 # reward of getting diploma
 α23 = 0.1673486313229665 # reward of graduating college
 
 # α24 = 0.137 # reward of getting diploma
@@ -2033,12 +2077,12 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 
 #**********************
 #= occupational choices: 3=white, 4=blue collar =#
-α3, α4 = log(3.1572583053788496e6)   , 0 ;          # the intercept outside exp()
+α3, α4 = log(3.5572583053788496e6)   , 0 ;          # the intercept outside exp()
 
 #= the intercept inside exp() for type 1 =#
 ω3T1, ω4T1 = 14.061564284889846   , 16.547926589269313    ;
 #= the intercept inside exp() for type 2 =#
-ω3T2, ω4T2 = 15.100369559956459   ,  15.963697465203543  ;
+ω3T2, ω4T2 = 15.100369559956459   ,  15.993697465203543  ;
 #= the intercept inside exp() for type 3 =#
 ω3T3, ω4T3 = 14.738045918179062   , 16.012170936180958   ;
 #= the intercept inside exp() for type 4 =#
@@ -2079,7 +2123,7 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 #= experience in blue collar =#
 α33, α43 = 0.052302536609589 , 0.11392481791539259 ;
 #= experience^2 in white collar =#
-α34, α44 = -0.004645355193469356 , -0.005833553337469315 ;
+α34, α44 = -0.004345355193469356 , -0.006233553337469315 ;
 #= experience^2 in blue collar =#
 α35, α45 = -0.005891123236720835 , -0.0035162316835964857 ;
 
@@ -2102,10 +2146,10 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 σ5 = log(1.238333261911126e15) ;
 
 # π1 = 0.79 ;     # share of individuals type 1
-π1T1exp = -log((1/0.7933144932575312)-1)
-π1T2exp = -log((1/0.834424210654026)-1)
-π1T3exp = -log((1/0.929382702067374)-1)
-π1T4exp = -log((1/0.929880934193405)-1)
+π1T1exp = -log((1/0.8233144932575312)-1)
+π1T2exp = -log((1/0.844424210654026)-1)
+π1T3exp = -log((1/0.939382702067374)-1)
+π1T4exp = -log((1/0.939880934193405)-1)
 
 
 δ = 0.92 ;      # discount factor
@@ -2115,7 +2159,7 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 α12 = log(9.285576218815763e6)                # if educ >=13
 α13 = -log(2.839815713751588e7)                # if age>=30
 
-α30study = -log(1.2664274605780955e7)
+α30study = -log(0.8664274605780955e7)
 
 
 
