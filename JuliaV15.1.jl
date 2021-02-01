@@ -19,14 +19,14 @@
 #=
     Solving dynamic programming
     Two main groups of individuals:
-    conscription group 1 : Not obligated to attend conscription
+    conscription group 2 : Not obligated to attend conscription
          Alternatives: 4 mutually exclusive choices
          choice 1 : stay home
          choice 2 : study
          choice 3 : white-collar occupation
          choice 4 : blue-collar occupation
 
-    conscription group 2 : obligated to attend conscription
+    conscription group 1 : obligated to attend conscription
          Alternatives: 5 mutually exclusive choices
          choice 1 : stay home
          choice 2 : study
@@ -180,14 +180,14 @@ end
 
 ################################################################################
 #=
-    conscription group 1 value function and solve Emax function
-    group 1: Not obligated to attend conscription
+    conscription group 2 value function and solve Emax function
+    group 2: Not obligated to attend conscription
     value function: given state vector at an age, it denotes the maxiual value
     at age a over all possible career decisions.
 =#
 
 #= value function for type 1: Not obligated to attent conscription =#
-@everywhere function valueFunctionGroup1(α10, α11, α12, α13,
+@everywhere function valueFunctionGroup2(α10, α11, α12, α13,
                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                 α3, α30, α31, α32, α33, α34, α35, α36,
                 α4, α40, α41, α42, α43, α44, α45, α46,
@@ -243,8 +243,8 @@ end
 
 
 
-#= solve Emax for conscription group 1: Not obligated to attent conscription =#
-function solveGroup1(α10, α11, α12, α13,
+#= solve Emax for conscription group 2: Not obligated to attent conscription =#
+function solveGroup2(α10, α11, α12, α13,
             α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
             α3, α30, α31, α32, α33, α34, α35, α36,
             α4, α40, α41, α42, α43, α44, α45, α46,
@@ -282,7 +282,7 @@ function solveGroup1(α10, α11, α12, α13,
             for sl in slState, x3 in 0:1:min(30, age-5-educ)
                 for x4 in 0:1:min(30, age-5-educ-x3)
                     @inbounds Emax[age-16, educ+1, sl+1, x3+1, x4+1] =
-                            valueFunctionGroup1(α10, α11, α12, α13,
+                            valueFunctionGroup2(α10, α11, α12, α13,
                                 α20, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
                                 α3, α30, α31, α32, α33, α34, α35, α36,
                                 α4, α40, α41, α42, α43, α44, α45, α46,
@@ -316,10 +316,10 @@ end
 #
 #
 # for i in 1:5
-#     print("Emax Group 1 calculation: \n")
+#     print("Emax Group 2 calculation: \n")
 #     start = Dates.unix2datetime(time())
 #
-#     EmaxGroup1 = solveGroup1(ω1T1, α11, α12, α13,
+#     EmaxGroup2 = solveGroup2(ω1T1, α11, α12, α13,
 #                     ω2T1, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
 #                     α3, ω3T1, α31, α32, α33, α34, α35, 0,
 #                     α4, ω4T1, α41, α42, α43, α44, α45, 0,
@@ -331,7 +331,7 @@ end
 # end
 #
 #
-# EmaxOld = EmaxGroup1
+# EmaxOld = EmaxGroup2
 
 
 
@@ -342,7 +342,7 @@ conscription goup 2: obligated to attend conscription
 =#
 
 #= value function for conscription goup 2: obligated to attend conscription =#
-@everywhere function valueFunctionGroup2(α10, α11, α12, α13,
+@everywhere function valueFunctionGroup1(α10, α11, α12, α13,
                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                 α3, α30, α31, α32, α33, α34, α35, α36,
                 α4, α40, α41, α42, α43, α44, α45, α46,
@@ -430,7 +430,7 @@ end
 
 
 #= Solve Emax for conscription goup 2: obligated to attent conscription =#
-function solveGroup2(α10, α11, α12, α13,
+function solveGroup1(α10, α11, α12, α13,
             α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
             α3, α30, α31, α32, α33, α34, α35, α36,
             α4, α40, α41, α42, α43, α44, α45, α46,
@@ -472,7 +472,7 @@ function solveGroup2(α10, α11, α12, α13,
                 for x3 in 0:1:min(30, age-5-educ-x5)
                     for x4 in 0:1:min(30, age-5-educ-x5-x3)
                         Emax[age-16, educ+1, sl+1, x3+1, x4+1, x5+1] =
-                            valueFunctionGroup2(α10, α11, α12, α13,
+                            valueFunctionGroup1(α10, α11, α12, α13,
                                 α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                                 α3, α30, α31, α32, α33, α34, α35, α36,
                                 α4, α40, α41, α42, α43, α44, α45, α46,
@@ -494,27 +494,27 @@ end#
 
 # #= test section =#
 # #= here we check whether Emax function is workign perfect or not. =#
-# epsSolveMeanGroup2= [0.0, 0.0, 0.0, 0.0, 0.0] ;
-# epsSolveσGroup2=[σ1   0.0  0.0  0.0  0.0 ;
+# epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0, 0.0] ;
+# epsSolveσGroup1=[σ1   0.0  0.0  0.0  0.0 ;
 #                 0.0  σ2   0.0  0.0  0.0 ;
 #                 0.0  0.0  σ3   σ34  0.0 ;
 #                 0.0  0.0  σ34  σ4   0.0
 #                 0.0  0.0  0.0  0.0  σ5  ] ;
 # M=10;
-# epssolveGroup2= rand(MersenneTwister(1234),MvNormal(epsSolveMeanGroup2, epsSolveσGroup2) , M) ;
+# epssolveGroup1= rand(MersenneTwister(1234),MvNormal(epsSolveMeanGroup1, epsSolveσGroup1) , M) ;
 #
 #
 # for i in 1:1
-#     print("Emax Group 2 calculation: \n")
+#     print("Emax Group 1 calculation: \n")
 #     start = Dates.unix2datetime(time())
 #
-#     EmaxGroup2= solveGroup2(0, α11, α12, α13,
+#     EmaxGroup1= solveGroup1(0, α11, α12, α13,
 #                 0, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
 #                 α3, 0, α31, α32, α33, α34, α35, 0,
 #                 α4, 0, α41, α42, α43, α44, α45, 0,
 #                 α50, α51, α52,
 #                 δ,
-#                 epssolveGroup2) ;
+#                 epssolveGroup1) ;
 #
 #     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
 #     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
@@ -528,7 +528,7 @@ end#
 ################################################################################
 #= simulate conscription goup 1 =#
 
-function simulateGroup1(α10, α11, α12, α13,
+function simulateGroup2(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                     α3, α30, α31, α32, α33, α34, α35, α36,
                     α4, α40, α41, α42, α43, α44, α45, α46,
@@ -684,7 +684,7 @@ end#simulate-1e20
 ################################################################################
 #= simulate conscription goup 2 =#
 
-function simulateGroup2(α10, α11, α12, α13,
+function simulateGroup1(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
                     α3, α30, α31, α32, α33, α34, α35, α36,
                     α4, α40, α41, α42, α43, α44, α45, α46,
@@ -1294,57 +1294,11 @@ function estimation(params,
     M = 150 #200
 
     #=     conscription goup 1     =#
-    epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0]
-    epsSolveσGroup1= [ σ1   0.0  0.0   0.0 ;
+    epsSolveMeanGroup2= [0.0, 0.0, 0.0, 0.0]
+    epsSolveσGroup2= [ σ1   0.0  0.0   0.0 ;
                       0.0  σ2   0.0   0.0 ;
                       0.0  0.0  σ3    σ34 ;
                       0.0  0.0  σ34   σ4  ]
-
-    #= check if the variance-covariance matrix is valid =#
-    if !isposdef(epsSolveσGroup1)
-        println("epsSolveσGroup1 : Wrong parameters were given as input!")
-        return wrongParametersReturn
-    end
-
-    epssolveGroup1= rand(MersenneTwister(1234),
-                        MvNormal(epsSolveMeanGroup1, epsSolveσGroup1), M) ;
-
-    EmaxGroup1T1= solveGroup1(ω1T1, α11, α12, α13,
-                ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T1, α31, α32, α33, α34, α35, α36,
-                α4, ω4T1, α41, α42, α43, α44, α45, α46,
-                δ,
-                epssolveGroup1)
-
-    EmaxGroup1T2= solveGroup1(ω1T2, α11, α12, α13,
-                ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T2, α31, α32, α33, α34, α35, α36,
-                α4, ω4T2, α41, α42, α43, α44, α45, α46,
-                δ,
-                epssolveGroup1)
-
-    EmaxGroup1T3= solveGroup1(ω1T3, α11, α12, α13,
-                ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T3, α31, α32, α33, α34, α35, α36,
-                α4, ω4T3, α41, α42, α43, α44, α45, α46,
-                δ,
-                epssolveGroup1)
-
-    EmaxGroup1T4= solveGroup1(ω1T4, α11, α12, α13,
-                ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T4, α31, α32, α33, α34, α35, α36,
-                α4, ω4T4, α41, α42, α43, α44, α45, α46,
-                δ,
-                epssolveGroup1)
-
-
-    #=     conscription goup 2     =#
-    epsSolveMeanGroup2= [0.0, 0.0, 0.0, 0.0, 0.0] ;
-    epsSolveσGroup2=[σ1   0.0  0.0  0.0  0.0 ;
-                    0.0  σ2   0.0  0.0  0.0 ;
-                    0.0  0.0  σ3   σ34  0.0 ;
-                    0.0  0.0  σ34  σ4   0.0 ;
-                    0.0  0.0  0.0  0.0  σ5  ] ;
 
     #= check if the variance-covariance matrix is valid =#
     if !isposdef(epsSolveσGroup2)
@@ -1352,43 +1306,89 @@ function estimation(params,
         return wrongParametersReturn
     end
 
-    epssolveGroup2= rand(MersenneTwister(4321),
-                        MvNormal(epsSolveMeanGroup2, epsSolveσGroup2) , M) ;
+    epssolveGroup2= rand(MersenneTwister(1234),
+                        MvNormal(epsSolveMeanGroup2, epsSolveσGroup2), M) ;
 
     EmaxGroup2T1= solveGroup2(ω1T1, α11, α12, α13,
                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
                 α3, ω3T1, α31, α32, α33, α34, α35, α36,
                 α4, ω4T1, α41, α42, α43, α44, α45, α46,
-                α50, α51, α52,
                 δ,
-                epssolveGroup2) ;
+                epssolveGroup2)
 
     EmaxGroup2T2= solveGroup2(ω1T2, α11, α12, α13,
                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
                 α3, ω3T2, α31, α32, α33, α34, α35, α36,
                 α4, ω4T2, α41, α42, α43, α44, α45, α46,
-                α50, α51, α52,
                 δ,
-                epssolveGroup2) ;
+                epssolveGroup2)
 
     EmaxGroup2T3= solveGroup2(ω1T3, α11, α12, α13,
                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
                 α3, ω3T3, α31, α32, α33, α34, α35, α36,
                 α4, ω4T3, α41, α42, α43, α44, α45, α46,
-                α50, α51, α52,
                 δ,
-                epssolveGroup2) ;
+                epssolveGroup2)
 
     EmaxGroup2T4= solveGroup2(ω1T4, α11, α12, α13,
                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
                 α3, ω3T4, α31, α32, α33, α34, α35, α36,
                 α4, ω4T4, α41, α42, α43, α44, α45, α46,
+                δ,
+                epssolveGroup2)
+
+
+    #=     conscription goup 2     =#
+    epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0, 0.0] ;
+    epsSolveσGroup1=[σ1   0.0  0.0  0.0  0.0 ;
+                    0.0  σ2   0.0  0.0  0.0 ;
+                    0.0  0.0  σ3   σ34  0.0 ;
+                    0.0  0.0  σ34  σ4   0.0 ;
+                    0.0  0.0  0.0  0.0  σ5  ] ;
+
+    #= check if the variance-covariance matrix is valid =#
+    if !isposdef(epsSolveσGroup1)
+        println("epsSolveσGroup1 : Wrong parameters were given as input!")
+        return wrongParametersReturn
+    end
+
+    epssolveGroup1= rand(MersenneTwister(4321),
+                        MvNormal(epsSolveMeanGroup1, epsSolveσGroup1) , M) ;
+
+    EmaxGroup1T1= solveGroup1(ω1T1, α11, α12, α13,
+                ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T1, α31, α32, α33, α34, α35, α36,
+                α4, ω4T1, α41, α42, α43, α44, α45, α46,
                 α50, α51, α52,
                 δ,
-                epssolveGroup2) ;
+                epssolveGroup1) ;
 
-    Emax = [EmaxGroup1T1,EmaxGroup1T2,EmaxGroup1T3,EmaxGroup1T4
-            ,EmaxGroup2T1,EmaxGroup2T2,EmaxGroup2T3,EmaxGroup2T4]
+    EmaxGroup1T2= solveGroup1(ω1T2, α11, α12, α13,
+                ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T2, α31, α32, α33, α34, α35, α36,
+                α4, ω4T2, α41, α42, α43, α44, α45, α46,
+                α50, α51, α52,
+                δ,
+                epssolveGroup1) ;
+
+    EmaxGroup1T3= solveGroup1(ω1T3, α11, α12, α13,
+                ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T3, α31, α32, α33, α34, α35, α36,
+                α4, ω4T3, α41, α42, α43, α44, α45, α46,
+                α50, α51, α52,
+                δ,
+                epssolveGroup1) ;
+
+    EmaxGroup1T4= solveGroup1(ω1T4, α11, α12, α13,
+                ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T4, α31, α32, α33, α34, α35, α36,
+                α4, ω4T4, α41, α42, α43, α44, α45, α46,
+                α50, α51, α52,
+                δ,
+                epssolveGroup1) ;
+
+    Emax = [EmaxGroup2T1,EmaxGroup2T2,EmaxGroup2T3,EmaxGroup2T4
+            ,EmaxGroup1T1,EmaxGroup1T2,EmaxGroup1T3,EmaxGroup1T4]
 
     #=****************************************************=#
     #= simulate the model =#
@@ -1443,18 +1443,18 @@ function estimation(params,
         E3T1*1.0,
         E4T1*1.0
     ]
-    NGroup1T1 = convert(Int, round(sum(weightsT1) * π1T1))
-    if NGroup1T1 > 0
-        simGroup1T1= simulateGroup1(ω1T1, α11, α12, α13,
+    NGroup2T1 = convert(Int, round(sum(weightsT1) * π1T1))
+    if NGroup2T1 > 0
+        simGroup2T1= simulateGroup2(ω1T1, α11, α12, α13,
                                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T1, α31, α32, α33, α34, α35, α36,
                                 α4, ω4T1, α41, α42, α43, α44, α45, α46,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup1T1, EmaxGroup1T1, weightsT1, 1111)
-        simGroup1T1[:, simCol["type"]] .= 1
+                                NGroup2T1, EmaxGroup2T1, weightsT1, 1111)
+        simGroup2T1[:, simCol["type"]] .= 1
     else
-        simGroup1T1 = reshape([],0,11)
+        simGroup2T1 = reshape([],0,11)
     end
 
     weightsT2 = [
@@ -1463,18 +1463,18 @@ function estimation(params,
         E3T2*1.0,
         E4T2*1.0
     ]
-    NGroup1T2 = convert(Int, round(sum(weightsT2) * π1T2))
-    if NGroup1T2 > 0
-        simGroup1T2= simulateGroup1(ω1T2, α11, α12, α13,
+    NGroup2T2 = convert(Int, round(sum(weightsT2) * π1T2))
+    if NGroup2T2 > 0
+        simGroup2T2= simulateGroup2(ω1T2, α11, α12, α13,
                                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T2, α31, α32, α33, α34, α35, α36,
                                 α4, ω4T2, α41, α42, α43, α44, α45, α46,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup1T2, EmaxGroup1T2, weightsT2, 2222)
-        simGroup1T2[:, simCol["type"]] .= 2
+                                NGroup2T2, EmaxGroup2T2, weightsT2, 2222)
+        simGroup2T2[:, simCol["type"]] .= 2
     else
-        simGroup1T2 = reshape([],0,11)
+        simGroup2T2 = reshape([],0,11)
     end
 
     weightsT3 = [
@@ -1483,18 +1483,18 @@ function estimation(params,
         E3T3*1.0,
         E4T3*1.0
     ]
-    NGroup1T3 = convert(Int, round(sum(weightsT3) * π1T3))
-    if NGroup1T3 > 0
-        simGroup1T3= simulateGroup1(ω1T3, α11, α12, α13,
+    NGroup2T3 = convert(Int, round(sum(weightsT3) * π1T3))
+    if NGroup2T3 > 0
+        simGroup2T3= simulateGroup2(ω1T3, α11, α12, α13,
                                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
                                 α3, ω3T3, α31, α32, α33, α34, α35, α36,
                                 α4, ω4T3, α41, α42, α43, α44, α45, α46,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup1T3, EmaxGroup1T3, weightsT3, 1345)
-        simGroup1T3[:, simCol["type"]] .= 3
+                                NGroup2T3, EmaxGroup2T3, weightsT3, 1345)
+        simGroup2T3[:, simCol["type"]] .= 3
     else
-        simGroup1T3 = reshape([],0,11)
+        simGroup2T3 = reshape([],0,11)
     end
 
     weightsT4 = [
@@ -1504,65 +1504,7 @@ function estimation(params,
         E4T4*1.0
     ]
 
-    NGroup1T4 = convert(Int, round(sum(weightsT4) * π1T4))
-    if NGroup1T4 > 0
-        simGroup1T4= simulateGroup1(ω1T4, α11, α12, α13,
-                                ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T4, α31, α32, α33, α34, α35, α36,
-                                α4, ω4T4, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52, δ,
-                                σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup1T4, EmaxGroup1T4, weightsT4, 5432)
-        simGroup1T4[:, simCol["type"]] .= 4
-    else
-        simGroup1T4 = reshape([],0,11)
-    end
-
-
-
-
-    NGroup2T1 = E1T1+E2T1+E3T1+E4T1 - NGroup1T1
-    if NGroup2T1 > 0
-        simGroup2T1= simulateGroup2(ω1T1, α11, α12, α13,
-                                ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T1, α31, α32, α33, α34, α35, α36,
-                                α4, ω4T1, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52, δ,
-                                σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup2T1, EmaxGroup2T1, weightsT1, 3333)
-        simGroup2T1[:, simCol["type"]] .= 1
-    else
-        simGroup2T1 = reshape([],0,11)
-    end
-    NGroup2T2 = E1T2+E2T2+E3T2+E4T2 - NGroup1T2
-    if NGroup2T2 > 0
-        simGroup2T2= simulateGroup2(ω1T2, α11, α12, α13,
-                                ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T2, α31, α32, α33, α34, α35, α36,
-                                α4, ω4T2, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52, δ,
-                                σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup2T2, EmaxGroup2T2, weightsT2, 4444)
-        simGroup2T2[:, simCol["type"]] .= 2
-    else
-        simGroup2T2 = reshape([],0,11)
-    end
-
-    NGroup2T3 = E1T3+E2T3+E3T3+E4T3 - NGroup1T3
-    if NGroup2T3 > 0
-        simGroup2T3= simulateGroup2(ω1T3, α11, α12, α13,
-                                ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T3, α31, α32, α33, α34, α35, α36,
-                                α4, ω4T3, α41, α42, α43, α44, α45, α46,
-                                α50, α51, α52, δ,
-                                σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup2T3, EmaxGroup2T3, weightsT3, 5234)
-        simGroup2T3[:, simCol["type"]] .= 3
-    else
-        simGroup2T3 = reshape([],0,11)
-    end
-
-    NGroup2T4 = E1T4+E2T4+E3T4+E4T4 - NGroup1T4
+    NGroup2T4 = convert(Int, round(sum(weightsT4) * π1T4))
     if NGroup2T4 > 0
         simGroup2T4= simulateGroup2(ω1T4, α11, α12, α13,
                                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
@@ -1570,16 +1512,74 @@ function estimation(params,
                                 α4, ω4T4, α41, α42, α43, α44, α45, α46,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
-                                NGroup2T4, EmaxGroup2T4, weightsT4, 7764)
+                                NGroup2T4, EmaxGroup2T4, weightsT4, 5432)
         simGroup2T4[:, simCol["type"]] .= 4
     else
         simGroup2T4 = reshape([],0,11)
     end
 
 
+
+
+    NGroup1T1 = E1T1+E2T1+E3T1+E4T1 - NGroup2T1
+    if NGroup1T1 > 0
+        simGroup1T1= simulateGroup1(ω1T1, α11, α12, α13,
+                                ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
+                                α3, ω3T1, α31, α32, α33, α34, α35, α36,
+                                α4, ω4T1, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
+                                σ1, σ2, σ3, σ4, σ34 ,σ5,
+                                NGroup1T1, EmaxGroup1T1, weightsT1, 3333)
+        simGroup1T1[:, simCol["type"]] .= 1
+    else
+        simGroup1T1 = reshape([],0,11)
+    end
+    NGroup1T2 = E1T2+E2T2+E3T2+E4T2 - NGroup2T2
+    if NGroup1T2 > 0
+        simGroup1T2= simulateGroup1(ω1T2, α11, α12, α13,
+                                ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
+                                α3, ω3T2, α31, α32, α33, α34, α35, α36,
+                                α4, ω4T2, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
+                                σ1, σ2, σ3, σ4, σ34 ,σ5,
+                                NGroup1T2, EmaxGroup1T2, weightsT2, 4444)
+        simGroup1T2[:, simCol["type"]] .= 2
+    else
+        simGroup1T2 = reshape([],0,11)
+    end
+
+    NGroup1T3 = E1T3+E2T3+E3T3+E4T3 - NGroup2T3
+    if NGroup1T3 > 0
+        simGroup1T3= simulateGroup1(ω1T3, α11, α12, α13,
+                                ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
+                                α3, ω3T3, α31, α32, α33, α34, α35, α36,
+                                α4, ω4T3, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
+                                σ1, σ2, σ3, σ4, σ34 ,σ5,
+                                NGroup1T3, EmaxGroup1T3, weightsT3, 5234)
+        simGroup1T3[:, simCol["type"]] .= 3
+    else
+        simGroup1T3 = reshape([],0,11)
+    end
+
+    NGroup1T4 = E1T4+E2T4+E3T4+E4T4 - NGroup2T4
+    if NGroup1T4 > 0
+        simGroup1T4= simulateGroup1(ω1T4, α11, α12, α13,
+                                ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
+                                α3, ω3T4, α31, α32, α33, α34, α35, α36,
+                                α4, ω4T4, α41, α42, α43, α44, α45, α46,
+                                α50, α51, α52, δ,
+                                σ1, σ2, σ3, σ4, σ34 ,σ5,
+                                NGroup1T4, EmaxGroup1T4, weightsT4, 7764)
+        simGroup1T4[:, simCol["type"]] .= 4
+    else
+        simGroup1T4 = reshape([],0,11)
+    end
+
+
     #= Concatenate two simulation =#
-    sim = [simGroup1T1; simGroup1T2; simGroup1T3; simGroup1T4;
-           simGroup2T1; simGroup2T2; simGroup2T3; simGroup2T4 ] ;
+    sim = [simGroup2T1; simGroup2T2; simGroup2T3; simGroup2T4;
+           simGroup1T1; simGroup1T2; simGroup1T3; simGroup1T4 ] ;
 
 
     #=****************************************************=#
@@ -2088,8 +2088,8 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 
 #**********************
 α50 = 15.969795443533842 # intercept in util5 (conscription)
-α51 = log(1.313564992722831e7) ;    # util5 coeff for if educ >= 12
-α52 = log(5.403804344709424e7) ;     # util5 coeff for if educ >= 16
+α51 = log(1.313564992722831e6) ;    # util5 coeff for if educ >= 12
+α52 = log(5.403804344709424e6) ;     # util5 coeff for if educ >= 16
 
 #**********************
 #= Variance-covariance of shocks =#
@@ -2209,7 +2209,7 @@ result = estimation(Params,
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
 print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
-# EmaxGroup1T1,EmaxGroup1T2,EmaxGroup1T3,EmaxGroup1T4,EmaxGroup2T1,EmaxGroup2T2,EmaxGroup2T3,EmaxGroup2T4 = Emax ;
+# EmaxGroup2T1,EmaxGroup2T2,EmaxGroup2T3,EmaxGroup2T4,EmaxGroup1T1,EmaxGroup1T2,EmaxGroup1T3,EmaxGroup1T4 = Emax ;
 
 # @code_warntype estimation(params)
 
