@@ -791,7 +791,7 @@ end
                     if     sl == 1
                         value= MeanMaximum([u1, u2, u5])
                     elseif sl == 0
-                        value= MeanMaximum([u1, u5])
+                        value= MeanMaximum([u5])
                     end
                 end
             end
@@ -1413,7 +1413,7 @@ function simulateGroup2(α10, α11, α12, α13,
                             if sl == 1
                                 utility= [u1, u2, -1e20, -1e20, u5]
                             elseif sl == 0
-                                utility= [u1, -1e20, -1e20, -1e20, u5]
+                                utility= [-1e20, -1e20, -1e20, -1e20, u5]
                             end
                         end#if educ
                     end#if x5
