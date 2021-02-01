@@ -414,7 +414,7 @@ conscription goup 2: obligated to attend conscription
                     if     sl == 1
                         value= MeanMaximum([u1, u2, u5])
                     elseif sl == 0
-                        value= MeanMaximum([u1, u5])
+                        value= MeanMaximum([u5])
                     end
                 end
             end
@@ -679,7 +679,7 @@ function simulateGroup1(α10, α11, α12, α13,
     end
 
     return sim
-end#simulate
+end#simulate-1e20
 
 ################################################################################
 #= simulate conscription goup 2 =#
@@ -770,11 +770,11 @@ function simulateGroup2(α10, α11, α12, α13,
                 maxUtility = maximum(utility)
             else
 
-                u1= u1 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1        ]
-                u2= u2 +δ*Emax[age+1-17+1 ,educ+1+1*(educ< 22) ,1+1 ,x3+1            ,x4+1            ,x5+1    ]
-                u3= u3 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1+1*(x3< x3Max) ,x4+1            ,x5+1      ]
-                u4= u4 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1+1*(x4< x4Max) ,x5+1     ]
-                u5= u5 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1            ,x4+1            ,x5+1+1*(x5<2) ]
+                u1= u1 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1               ,x4+1               ,x5+1          ]
+                u2= u2 +δ*Emax[age+1-17+1 ,educ+1+1*(educ< 22) ,1+1 ,x3+1               ,x4+1               ,x5+1          ]
+                u3= u3 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1+1*(x3< x3Max) ,x4+1               ,x5+1          ]
+                u4= u4 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1               ,x4+1+1*(x4< x4Max) ,x5+1          ]
+                u5= u5 +δ*Emax[age+1-17+1 ,educ+1              ,0+1 ,x3+1               ,x4+1               ,x5+1+1*(x5<2) ]
 
                 if age > 18
                     if x5 == 2
@@ -785,7 +785,7 @@ function simulateGroup2(α10, α11, α12, α13,
                         end#if educ
                     elseif x5 == 1
                             utility= [-1e20, -1e20, -1e20, -1e20, u5]
-                    else
+                    elseif x5 == 0
                         if educ == 22
                             if sl == 1
                                 utility= [u1, -1e20, -1e20, -1e20, u5]
@@ -796,7 +796,7 @@ function simulateGroup2(α10, α11, α12, α13,
                             if sl == 1
                                 utility= [u1, u2, -1e20, -1e20, u5]
                             elseif sl == 0
-                                utility= [u1, -1e20, -1e20, -1e20, u5]
+                                utility= [-1e20, -1e20, -1e20, -1e20, u5]
                             end
                         end#if educ
                     end#if x5
@@ -1099,17 +1099,17 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
     end
 
 
-    # #= Printing each error seperately =#
-    # print("\n wageWhiteError  = ", wageWhiteError )
-    # print("\n wageBlueError   = ", wageBlueError  )
-    # print("\n homeError       = ", homeError      )
-    # print("\n studyError      = ", studyError     )
-    # print("\n whiteError      = ", whiteError     )
-    # print("\n blueError       = ", blueError      )
-    # print("\n milError        = ", milError       )
-    # print("\n devWhiteError   = ", devWhiteError  )
-    # print("\n devBlueError    = ", devBlueError   )
-    # print("\n educatedError   = ", educatedError  )
+    #= Printing each error seperately =#
+    print("\n wageWhiteError  = ", wageWhiteError )
+    print("\n wageBlueError   = ", wageBlueError  )
+    print("\n homeError       = ", homeError      )
+    print("\n studyError      = ", studyError     )
+    print("\n whiteError      = ", whiteError     )
+    print("\n blueError       = ", blueError      )
+    print("\n milError        = ", milError       )
+    print("\n devWhiteError   = ", devWhiteError  )
+    print("\n devBlueError    = ", devBlueError   )
+    print("\n educatedError   = ", educatedError  )
 
 
     #=
@@ -1652,7 +1652,7 @@ function estimation(params,
     educatedShare = Array{Float64,2}(undef, (size(educatedShareData,1),4))
     educatedCol = Dict(
         "age"                 => 1,
-        "educatedData"            => 2,
+        "educatedData"        => 2,
         "educatedStdBoot"     => 3,
         "educatedSim"         => 4
     )
@@ -1662,7 +1662,7 @@ function estimation(params,
     #=****************************************************=#
     #=
     sim is simulation of N people behaviour
-    here we update data moment conditio
+    here we update data moment condition
     =#
     ageInterval= unique(choiceMoment[:,choiceCol["age"]])
     ageMax= maximum(ageInterval)
@@ -1795,9 +1795,9 @@ function estimation(params,
         writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
     end
     if ENV["USER"]=="sabouri"
-        if (result < bestResult[1])
+        if (result < 1.0e50) #bestResult[1])
         ## Server ##
-        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',') ;
+        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
         writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
         # writedlm( "/home/sabouri/Labor/CodeOutput/choiceMoment.csv",  choiceMoment, ',');
         # writedlm( "/home/sabouri/Labor/CodeOutput/wageMoment.csv",  wageMoment, ',');
@@ -2004,13 +2004,11 @@ end
 
 
 
-
-
 # parameters in the utility functions
 #**********************
 ω1T1 = 17.01236860868671     ;   # the intercept of staying home α10 for type 1
 ω1T2 = 16.80220123598417       ;   # the intercept of staying home α10 for type 2
-ω1T3 = 18.101115086202267      ;   # the intercept of staying home α10 for type 3
+ω1T3 = 17.861115086202267      ;   # the intercept of staying home α10 for type 3
 ω1T4 = 17.318684429739754      ;   # the intercept of staying home α10 for type 4
 
 #**********************
@@ -2026,7 +2024,7 @@ tc1T1 = log(1.7908930961649176e8)    ;    # education >= 12?
 # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
 tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 
-α22 = 0.15319803518449737 # reward of getting diploma
+α22 = 0.12319803518449737 # reward of getting diploma
 α23 = 0.1673486313229665 # reward of graduating college
 
 # α24 = 0.137 # reward of getting diploma
@@ -2042,16 +2040,16 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 #= the intercept inside exp() for type 2 =#
 ω3T2, ω4T2 = 15.100369559956459   ,  15.963697465203543  ;
 #= the intercept inside exp() for type 3 =#
-ω3T3, ω4T3 = 14.638045918179062   , 16.012170936180958   ;
+ω3T3, ω4T3 = 14.738045918179062   , 16.012170936180958   ;
 #= the intercept inside exp() for type 4 =#
-ω3T4, ω4T4 = 14.700031826971303   , 16.260410696077926   ;
+ω3T4, ω4T4 = 14.720031826971303   , 16.290410696077926   ;
 
 
 #**********************
 #= share of each type for those education less than 10 in 15 years old =#
-πE1T1 = 0.9957980638885157
-πE1T2 = 0.002876300875887534
-πE1T3 = 0.0009917859875172893
+πE1T1 = 0.8057980638885157
+πE1T2 = 0.082876300875887534
+πE1T3 = 0.0509917859875172893
 πE1T4 = 1- πE1T1- πE1T2- πE1T3
 
 # den = 1/(1+πE1T1+πE1T2+πE1T3)
@@ -2077,11 +2075,11 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 #= education coefficients =#
 α31, α41 =  0.12988121571957434 , 0.05875448225958381 ;
 #= experience in white collar =#
-α32, α42 = 0.09376990725285181 , 0.02313462654530423 ;
+α32, α42 = 0.09376990725285181 , 0.01713462654530423 ;
 #= experience in blue collar =#
 α33, α43 = 0.052302536609589 , 0.11392481791539259 ;
 #= experience^2 in white collar =#
-α34, α44 = -0.004745355193469356 , -0.004933553337469315 ;
+α34, α44 = -0.004645355193469356 , -0.005833553337469315 ;
 #= experience^2 in blue collar =#
 α35, α45 = -0.005891123236720835 , -0.0035162316835964857 ;
 
@@ -2101,13 +2099,13 @@ tc2 = log(5.730208744183692e7)     ;    # education >= 16?
 σ4 = 0.3156394688613694 ;    # variance of ε4 - blue collar
 σ34 = 0.182718181403573 ;    # Covariance of white and blue collar shocks
 
-σ5 = log(1.238333261911126e19) ;
+σ5 = log(1.238333261911126e15) ;
 
 # π1 = 0.79 ;     # share of individuals type 1
-π1T1exp = -log((1/0.8133144932575312)-1)
-π1T2exp = -log((1/0.854424210654026)-1)
-π1T3exp = -log((1/0.939382702067374)-1)
-π1T4exp = -log((1/0.949880934193405)-1)
+π1T1exp = -log((1/0.7933144932575312)-1)
+π1T2exp = -log((1/0.834424210654026)-1)
+π1T3exp = -log((1/0.929382702067374)-1)
+π1T4exp = -log((1/0.929880934193405)-1)
 
 
 δ = 0.92 ;      # discount factor
@@ -2139,63 +2137,63 @@ Params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
 # Params = readdlm("/home/sabouri/Labor/CodeOutput/parameters.csv")
 
 
-# Params = [ # currently best with delta 0.92
-#     17.01236860868671
-#     16.80220123598417
-#     18.101115086202267
-#     17.318684429739754
-#     -15.275634369363559
-#     16.04397280995114
-#     -17.16183481150193
-#     16.48129586002007
-#     18.137250774594587
-#     19.377387203462717
-#     19.738135594293446#
-#     18.22854612129429
-#     19.00339517578263
-#     17.86384761107092
-#     0.15319803518449737
-#     0.1673486313229665
-#     0.11018985798785595
-#     -16.354295564276697
-#     14.965214584078668
-#     14.061564284889846
-#     15.100369559956459
-#     14.638045918179062
-#     14.700031826971303
-#     0.12988121571957434
-#     0.09376990725285181
-#     0.052302536609589
-#     -0.004745355193469356
-#     -0.005891123236720835
-#     16.547926589269313
-#     15.963697465203543
-#     16.012170936180958
-#     16.260410696077926
-#     0.05875448225958381
-#     0.02313462654530423
-#     0.11392481791539259
-#     -0.004933553337469315
-#     -0.0035162316835964857
-#     15.969795443533842
-#     16.39084046044319
-#     17.80519886475861
-#     34.616240138651904
-#     32.04710415362266
-#     0.6089796764947927
-#     0.3156394688613694
-#     0.182718181403573
-#     43.9628830987124
-#     8.000610230879746
-#     2.153570791432335
-#     1.0888178075890353
-#     1.473324662047759
-#     0.5723911216226036
-#     -0.1024108930121635
-#     1.4716924463776122
-#     1.7697309642723555
-#     2.7406426628373497
-#     2.941935153591848
+# Params = [
+#     16.917434228867574
+#     16.483804629448578
+#     17.633415603342822
+#     17.47411781178098
+#     -15.451601874903858
+#     17.41742296264525
+#     -17.40804154841029
+#     16.355799355364777
+#     17.89870543196756
+#     19.656910332496498
+#     20.022849206120572
+#     18.491539613548454
+#     19.277537271293195
+#     18.1215937858313
+#     0.12554399214151854
+#     0.17047586448522004
+#     0.11249468518233659
+#     -16.58888334826892
+#     14.914841035414884
+#     14.01970094762609
+#     15.070616530660272
+#     14.693631327347475
+#     14.682465789714316
+#     0.12972719474327205
+#     0.09079425893600641
+#     0.053774475416476494
+#     -0.00478455868782153
+#     -0.006558055298671339
+#     16.601590501593257
+#     16.027132199241766
+#     16.05239090725628
+#     16.243956190798873
+#     0.05848880067966815
+#     0.018100566055436303
+#     0.11419559465800871
+#     -0.0059345391653508614
+#     -0.0033499772461499776
+#     16.200289812228966
+#     16.627392865628675
+#     17.60414716943579
+#     34.558612791181986
+#     31.737331116858716
+#     0.6184611399162183
+#     0.3209003249592074
+#     0.18606655314124987
+#     44.59614472430866
+#     2.9058085872875528
+#     0.3227428419803427
+#     -0.16992981941227842
+#     1.4952424048512816
+#     0.5813461453721587
+#     -0.10316498601791842
+#     1.3650930856410735
+#     1.6413023465850745
+#     2.615046539268781
+#     2.622772460026167
 # ]
 
 
