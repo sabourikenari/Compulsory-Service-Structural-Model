@@ -391,3 +391,182 @@ Params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
 #     2.615046539268781
 #     2.622772460026167
 # ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################################################
+
+function ParametersWide(Params)
+    ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
+            ω2T1, ω2T2, ω2T3, ω2T4,
+            α21, tc1T1, tc2, α22, α23, α25, α30study,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35,
+                ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
+            α50, α51, α52,
+            σ1, σ2, σ3, σ4, σ34 ,σ5,
+            πE1T1exp, πE1T2exp, πE1T3exp,
+            πE2T1exp, πE2T2exp, πE2T3exp,
+            π1T1exp, π1T2exp, π1T3exp, π1T4exp  = Params
+
+    α21 = exp(α21)
+    tc1T1 = exp(tc1T1)
+    tc2 = exp(tc2)
+    α3 = exp(α3)
+    α51 = exp(α51)
+    α52 = exp(α52)
+    σ1 = exp(σ1)
+    σ2 = exp(σ2)
+    σ5 = exp(σ5)
+    α11 = exp(-α11)
+    α12 = exp(α12)
+    α13 = exp(-α13)
+    α30study = exp(-α30study)
+
+    πE1T1 = exp(πE1T1exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T2 = exp(πE1T2exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T3 = exp(πE1T3exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+    πE1T4 = exp(0)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
+
+    πE2T1 = exp(πE2T1exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T2 = exp(πE2T2exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T3 = exp(πE2T3exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+    πE2T4 = exp(0)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
+
+    π1T1 = exp(π1T1exp) / (1+exp(π1T1exp))
+    π1T2 = exp(π1T2exp) / (1+exp(π1T2exp))
+    π1T3 = exp(π1T3exp) / (1+exp(π1T3exp))
+    π1T4 = exp(π1T4exp) / (1+exp(π1T4exp))
+
+
+    output = """
+    # parameters in the utility functions
+    #**********************
+    ω1T1 = $ω1T1     ;   # the intercept of staying home α10 for type 1
+    ω1T2 = $ω1T2       ;   # the intercept of staying home α10 for type 2
+    ω1T3 = $ω1T3      ;   # the intercept of staying home α10 for type 3
+    ω1T4 = $ω1T4      ;   # the intercept of staying home α10 for type 4
+
+    #**********************
+    ω2T1 = $ω2T1      ;    # the intercept of studying for type 1
+    ω2T2 = $ω2T2     ;    # the intercept of studying for type 2
+    ω2T3 = $ω2T3      ;    # the intercept of studying for type 3
+    ω2T4 = $ω2T4      ;    # the intercept of studying for type 4
+
+    α21 = log($α21)     ;    # study in (t-1)?
+    tc1T1 = log($tc1T1)    ;    # education >= 12?
+    # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
+    # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
+    # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
+    tc2 = log($tc2)     ;    # education >= 16?
+
+    α22 = $α22 # reward of getting diploma
+    α23 = $α23 # reward of graduating college
+
+    # α24 = 0.137 # reward of getting diploma
+    α25 = $α25 # reward of graduating college
+
+
+    #**********************
+    #= occupational choices: 3=white, 4=blue collar =#
+    α3, α4 = log($α3)   , 0 ;          # the intercept outside exp()
+
+    #= the intercept inside exp() for type 1 =#
+    ω3T1, ω4T1 = $ω3T1   , $ω4T1    ;
+    #= the intercept inside exp() for type 2 =#
+    ω3T2, ω4T2 = $ω3T2   ,  $ω4T2  ;
+    #= the intercept inside exp() for type 3 =#
+    ω3T3, ω4T3 = $ω3T3   , $ω4T3   ;
+    #= the intercept inside exp() for type 4 =#
+    ω3T4, ω4T4 = $ω3T4   , $ω4T4   ;
+
+
+    #**********************
+    #= share of each type for those education less than 10 in 15 years old =#
+    πE1T1 = $πE1T1
+    πE1T2 = $πE1T2
+    πE1T3 = $πE1T3
+    πE1T4 = 1- πE1T1- πE1T2- πE1T3
+
+    # den = 1/(1+πE1T1+πE1T2+πE1T3)
+    πE1T1exp = log(πE1T1/πE1T4)
+    πE1T2exp = log(πE1T2/πE1T4)
+    πE1T3exp = log(πE1T3/πE1T4)
+
+
+    #= share of each type for those education equalls 10 in 15 years old =#
+    πE2T1 = $πE2T1
+    πE2T2 = $πE2T2
+    πE2T3 = $πE2T3
+    πE2T4 = 1- πE2T1- πE2T2- πE2T3
+
+    # den = 1/(1-$πE2T1-$πE2T2-$πE2T3)
+    πE2T1exp = log(πE2T1/πE2T4)
+    πE2T2exp = log(πE2T2/πE2T4)
+    πE2T3exp = log(πE2T3/πE2T4)
+
+
+
+    #**********************
+    #= education coefficients =#
+    α31, α41 =  $α31 , $α41 ;
+    #= experience in white collar =#
+    α32, α42 = $α32 , $α42 ;
+    #= experience in blue collar =#
+    α33, α43 = $α33 , $α43 ;
+    #= experience^2 in white collar =#
+    α34, α44 = $α34 , $α44 ;
+    #= experience^2 in blue collar =#
+    α35, α45 = $α35 , $α45 ;
+
+    #= entry cost of without experience =#
+    # α36, α46 = 0.0 , 0.0 ;
+
+    #**********************
+    α50 = $α50 # intercept in util5 (conscription)
+    α51 = log($α51) ;    # util5 coeff for if educ >= 12
+    α52 = log($α52) ;     # util5 coeff for if educ >= 16
+
+    #**********************
+    #= Variance-covariance of shocks =#
+    σ1 = log($σ1) ;  # variance of ε1 - staying home
+    σ2 = log($σ2) ;  # variance of ε2 - studying
+    σ3 = $σ3 ;    # variance of ε3 - white collar
+    σ4 = $σ4 ;    # variance of ε4 - blue collar
+    σ34 = $σ34 ;    # Covariance of white and blue collar shocks
+
+    σ5 = log($σ5) ;
+
+    # π1 = 0.79 ;     # share of individuals type 1
+    π1T1exp = -log((1/$π1T1)-1)
+    π1T2exp = -log((1/$π1T2)-1)
+    π1T3exp = -log((1/$π1T3)-1)
+    π1T4exp = -log((1/$π1T4)-1)
+
+
+    δ = 0.92 ;      # discount factor
+
+    #= New parameters in the model =#
+    α11 = -log($α11)  # if age<=18
+    α12 = log($α12)                # if educ >=13
+    α13 = -log($α13)                # if age>=30
+
+    α30study = -log($α30study)
+
+    """
+
+    print("\n\n\n",output)
+end

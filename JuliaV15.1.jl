@@ -885,7 +885,8 @@ end#simulate
     and calculate the error
 =#
 function SMMCalculate(choiceMoment, wageMoment, educatedShare,
-    wageCol, choiceCol, educatedCol)
+    wageCol, choiceCol, educatedCol,
+    contributions)
 
 
     wageWhiteError  = 0.0
@@ -928,13 +929,12 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         end
 
         if wageMoment[i,3] == 1.0
-            # age = wageMoment[i, wageCol["age"]]
-            # educated = wageMoment[i, wageCol["educated"]]
-            # print("data= ",log(wageMoment[i, wageCol["incomeData"]]),", sim= ",log(wageMoment[i, wageCol["incomeSim"]]),"\n")
-            # print("age= ",age,", educated= ",educated,", error= ",error,"\n")
             wageBlueError += error^2
         end
-
+        if error == Inf
+            print("1\n")
+        end
+        contributions = [contributions; error]
 
         #= percentage error of mean income standard deviation =#
         error = (
@@ -958,8 +958,10 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         if wageMoment[i,3] == 1.0
             devBlueError += error^2
         end
-
-
+        if error == Inf
+            print("2\n")
+        end
+        contributions = [contributions; error]
 
     end
 
@@ -985,6 +987,11 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         if error == 1.0
             error =  30.0
         end
+        if error == Inf
+            print("3\n")
+        end
+        contributions = [contributions; error]
+
 
         homeError += error^2
 
@@ -1009,6 +1016,11 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         end
 
         studyError += error^2
+
+        if error == Inf
+            print("4\n")
+        end
+        contributions = [contributions; error]
 
         #= choice 3: white-collar occupation =#
         error = (
@@ -1035,6 +1047,11 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         if error == 1.0
             error =  50.0
         end
+        if error == Inf
+            print("5\n")
+        end
+
+        contributions = [contributions; error]
 
 
         whiteError += error^2
@@ -1058,6 +1075,10 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         if error == 1.0
             error =  50.0
         end
+        if error == Inf
+            print("6\n")
+        end
+        contributions = [contributions; error]
 
         blueError += error^2
 
@@ -1077,7 +1098,9 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         end
         if choiceMoment[i, choiceCol["age"]] > 18
             milError += error^2
+            contributions = [contributions; error]
         end
+
 
     end
 
@@ -1093,7 +1116,10 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
                 educatedShare[i, educatedCol["educatedSim" ]]
             ) / educatedShare[i, educatedCol["educatedStdBoot"]]
         )
-
+        if error == Inf
+            print("8\n")
+        end
+        contributions = [contributions; error]
         educatedError = educatedError + error^2
 
     end
@@ -1144,7 +1170,7 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
         educatedError
     )
 
-    return SMMError
+    return SMMError, contributions
 end
 
 ################################################################################
@@ -1291,7 +1317,7 @@ function estimation(params,
 
     #=****************************************************=#
     #= solve the model =#
-    M = 150 #200
+    M = 150
 
     #=     conscription goup 1     =#
     epsSolveMeanGroup2= [0.0, 0.0, 0.0, 0.0]
@@ -1767,8 +1793,11 @@ function estimation(params,
     calculating error = sum squared of percentage distance
     between data moment and moment from model simulation
     =#
-    result = SMMCalculate(choiceMoment, wageMoment, educatedShare,
-        wageCol, choiceCol, educatedCol)
+    contributions = [1]
+
+    result, contributions= SMMCalculate(choiceMoment, wageMoment, educatedShare,
+            wageCol, choiceCol, educatedCol,
+            contributions)
 
 
     # #=
@@ -1797,10 +1826,10 @@ function estimation(params,
            far away from 0.12
     =#
 
-    whiteConstraintError = constraintError(sim, simCol)
+    ConstraintError, contributions = constraintError(sim, simCol, contributions)
 
     # print("\n constraintError= ",whiteConstraintError)
-    result = result + whiteConstraintError
+    result = result + ConstraintError
 
 
 
@@ -1810,7 +1839,7 @@ function estimation(params,
         writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
     end
     if ENV["USER"]=="sabouri"
-        if (result < 1.0e50)#bestResult[1])
+        if (result < bestResult[1])
         ## Server ##
         writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
         writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
@@ -1845,12 +1874,22 @@ function estimation(params,
 
     #= return SMM error calculated =#
     print("\n SMM error = ", result, " ")
-    return result #, moment, momentData #, choiceMoment, wageMoment, sim
+    # print(contributions)
+
+    contributions = contributions[2:end]
+    # contributions = contributions[contributions.!=Inf]
+    # contributions = contributions[contributions.!=NaN]
+
+    out = Dict(
+        "value"=> result,
+        "root_contributions"=> contributions
+    )
+    return out
+    # return result, contributions #, moment, momentData #, choiceMoment, wageMoment, sim
 end
 
 
-
-function constraintError(sim,simCol)
+function constraintError(sim, simCol, contributions)
 
     whiteConstraintError = 0.0
     studyConstraintError = 0.0
@@ -1868,210 +1907,53 @@ function constraintError(sim,simCol)
         flag2 = flag2 / sum(flag2)
 
         error = ((flag2[3]-0.12)/0.004)
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("10\n")
+        end
+        contributions = [contributions; error]
         whiteConstraintError = whiteConstraintError + error^2
 
         error = (flag2[2]-0)/0.005
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("11\n")
+        end
+        contributions = [contributions; error]
         studyConstraintError = studyConstraintError + error^2
 
 
     end
 
     output = whiteConstraintError + studyConstraintError
-    return output
+    return output, contributions
 end
-
 
 
 
 ################################################################################
 #= read data moment files =#
 
+if ENV["USER"] == "sabouri"
+    include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
+end
+if ENV["USER"] == "ehsan"
+    include("/home/ehsan/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
+end
 
-include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
-
-print("\nEstimation started:")
-start = Dates.unix2datetime(time())
-
-result = estimation(Params,
-    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
-
-finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
-print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+# # for i in 1:4
+# print("\nEstimation started:")
+# start = Dates.unix2datetime(time())
+#
+# result = estimation(Params,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+#
+# finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
+# print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+# # end
 
 
 # @code_warntype estimation(params)
-
-
-
-
-
-################################################################################
-
-function ParametersWide(Params)
-    ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
-            ω2T1, ω2T2, ω2T3, ω2T4,
-            α21, tc1T1, tc2, α22, α23, α25, α30study,
-            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35,
-                ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
-            α50, α51, α52,
-            σ1, σ2, σ3, σ4, σ34 ,σ5,
-            πE1T1exp, πE1T2exp, πE1T3exp,
-            πE2T1exp, πE2T2exp, πE2T3exp,
-            π1T1exp, π1T2exp, π1T3exp, π1T4exp  = Params
-
-    α21 = exp(α21)
-    tc1T1 = exp(tc1T1)
-    tc2 = exp(tc2)
-    α3 = exp(α3)
-    α51 = exp(α51)
-    α52 = exp(α52)
-    σ1 = exp(σ1)
-    σ2 = exp(σ2)
-    σ5 = exp(σ5)
-    α11 = exp(-α11)
-    α12 = exp(α12)
-    α13 = exp(-α13)
-    α30study = exp(-α30study)
-
-    πE1T1 = exp(πE1T1exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
-    πE1T2 = exp(πE1T2exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
-    πE1T3 = exp(πE1T3exp)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
-    πE1T4 = exp(0)/(exp(πE1T1exp)+exp(πE1T2exp)+exp(πE1T3exp)+1)
-
-    πE2T1 = exp(πE2T1exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
-    πE2T2 = exp(πE2T2exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
-    πE2T3 = exp(πE2T3exp)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
-    πE2T4 = exp(0)/(exp(πE2T1exp)+exp(πE2T2exp)+exp(πE2T3exp)+1)
-
-    π1T1 = exp(π1T1exp) / (1+exp(π1T1exp))
-    π1T2 = exp(π1T2exp) / (1+exp(π1T2exp))
-    π1T3 = exp(π1T3exp) / (1+exp(π1T3exp))
-    π1T4 = exp(π1T4exp) / (1+exp(π1T4exp))
-
-
-    output = """
-    # parameters in the utility functions
-    #**********************
-    ω1T1 = $ω1T1     ;   # the intercept of staying home α10 for type 1
-    ω1T2 = $ω1T2       ;   # the intercept of staying home α10 for type 2
-    ω1T3 = $ω1T3      ;   # the intercept of staying home α10 for type 3
-    ω1T4 = $ω1T4      ;   # the intercept of staying home α10 for type 4
-
-    #**********************
-    ω2T1 = $ω2T1      ;    # the intercept of studying for type 1
-    ω2T2 = $ω2T2     ;    # the intercept of studying for type 2
-    ω2T3 = $ω2T3      ;    # the intercept of studying for type 3
-    ω2T4 = $ω2T4      ;    # the intercept of studying for type 4
-
-    α21 = log($α21)     ;    # study in (t-1)?
-    tc1T1 = log($tc1T1)    ;    # education >= 12?
-    # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
-    # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
-    # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
-    tc2 = log($tc2)     ;    # education >= 16?
-
-    α22 = $α22 # reward of getting diploma
-    α23 = $α23 # reward of graduating college
-
-    # α24 = 0.137 # reward of getting diploma
-    α25 = $α25 # reward of graduating college
-
-
-    #**********************
-    #= occupational choices: 3=white, 4=blue collar =#
-    α3, α4 = log($α3)   , 0 ;          # the intercept outside exp()
-
-    #= the intercept inside exp() for type 1 =#
-    ω3T1, ω4T1 = $ω3T1   , $ω4T1    ;
-    #= the intercept inside exp() for type 2 =#
-    ω3T2, ω4T2 = $ω3T2   ,  $ω4T2  ;
-    #= the intercept inside exp() for type 3 =#
-    ω3T3, ω4T3 = $ω3T3   , $ω4T3   ;
-    #= the intercept inside exp() for type 4 =#
-    ω3T4, ω4T4 = $ω3T4   , $ω4T4   ;
-
-
-    #**********************
-    #= share of each type for those education less than 10 in 15 years old =#
-    πE1T1 = $πE1T1
-    πE1T2 = $πE1T2
-    πE1T3 = $πE1T3
-    πE1T4 = 1- πE1T1- πE1T2- πE1T3
-
-    # den = 1/(1+πE1T1+πE1T2+πE1T3)
-    πE1T1exp = log(πE1T1/πE1T4)
-    πE1T2exp = log(πE1T2/πE1T4)
-    πE1T3exp = log(πE1T3/πE1T4)
-
-
-    #= share of each type for those education equalls 10 in 15 years old =#
-    πE2T1 = $πE2T1
-    πE2T2 = $πE2T2
-    πE2T3 = $πE2T3
-    πE2T4 = 1- πE2T1- πE2T2- πE2T3
-
-    # den = 1/(1-$πE2T1-$πE2T2-$πE2T3)
-    πE2T1exp = log(πE2T1/πE2T4)
-    πE2T2exp = log(πE2T2/πE2T4)
-    πE2T3exp = log(πE2T3/πE2T4)
-
-
-
-    #**********************
-    #= education coefficients =#
-    α31, α41 =  $α31 , $α41 ;
-    #= experience in white collar =#
-    α32, α42 = $α32 , $α42 ;
-    #= experience in blue collar =#
-    α33, α43 = $α33 , $α43 ;
-    #= experience^2 in white collar =#
-    α34, α44 = $α34 , $α44 ;
-    #= experience^2 in blue collar =#
-    α35, α45 = $α35 , $α45 ;
-
-    #= entry cost of without experience =#
-    # α36, α46 = 0.0 , 0.0 ;
-
-    #**********************
-    α50 = $α50 # intercept in util5 (conscription)
-    α51 = log($α51) ;    # util5 coeff for if educ >= 12
-    α52 = log($α52) ;     # util5 coeff for if educ >= 16
-
-    #**********************
-    #= Variance-covariance of shocks =#
-    σ1 = log($σ1) ;  # variance of ε1 - staying home
-    σ2 = log($σ2) ;  # variance of ε2 - studying
-    σ3 = $σ3 ;    # variance of ε3 - white collar
-    σ4 = $σ4 ;    # variance of ε4 - blue collar
-    σ34 = $σ34 ;    # Covariance of white and blue collar shocks
-
-    σ5 = log($σ5) ;
-
-    # π1 = 0.79 ;     # share of individuals type 1
-    π1T1exp = -log((1/$π1T1)-1)
-    π1T2exp = -log((1/$π1T2)-1)
-    π1T3exp = -log((1/$π1T3)-1)
-    π1T4exp = -log((1/$π1T4)-1)
-
-
-    δ = 0.92 ;      # discount factor
-
-    #= New parameters in the model =#
-    α11 = -log($α11)  # if age<=18
-    α12 = log($α12)                # if educ >=13
-    α13 = -log($α13)                # if age>=30
-
-    α30study = -log($α30study)
-
-    """
-
-    print("\n\n\n",output)
-end
-
-
-
-
-
 
 
 
@@ -2082,31 +1964,74 @@ if ENV["USER"] == "sabouri"
 println("\n \n \n \n")
 println("optimization started at = " ,Dates.format(now(), "HH:MM"))
 
+
+
 #=**********************************************=#
-#= NLopt.jl =#
-using NLopt
-#= specifying algorithm and number of parameters =#
-opt = NLopt.Opt(:LN_BOBYQA, size(Params)[1])
+#= POUNDERs from estimagic (importing frome ptyhon packages) =#
+using PyCall
+pd = pyimport("pandas");
+estimagic = pyimport("estimagic");
 
-#= specifying objective functiom =#
-opt.min_objective = x -> estimation(x,
-    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)[1]
+if ENV["USER"] == "sabouri"
+    include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
+end
+if ENV["USER"] == "ehsan"
+    include("/home/ehsan/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
+end
 
-#= specifying upper and lower bounds of parameters =#
-# opt.lower_bounds = paramsLower
-# opt.upper_bounds = paramsUpper
+start_params = pd.DataFrame(
+    data=Params,
+    columns=["value"],
+);
+start_params
 
-#= optimization stupping creiteria =#
-opt.ftol_rel = 0.01
-# apt.stopval = 10.0
-# apt.maxeval = 2000
+# # for i in 1:14
+# print("\nEstimation started:")
+# start = Dates.unix2datetime(time())
+#
+# result = estimation_pounders(start_params,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+#
+# finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
+# print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+# # end
 
-#= start the optimizatiom =#
-(optf,optx,ret) = NLopt.optimize(opt, Params)
+res = estimagic.minimize(
+    criterion= x -> estimation_pounders(x,
+        choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ,
+    params=start_params,
+    algorithm="tao_pounders"
+)
+res["solution_params"]["value"]
 
-#= writting the output =#
-numevals = opt.numevals
-println("got $optf at $optx after $numevals iterations (returned $ret)")
+# @code_warntype sphere(start_params,2)
+
+
+# #=**********************************************=#
+# #= NLopt.jl =#
+# using NLopt
+# #= specifying algorithm and number of parameters =#
+# opt = NLopt.Opt(:LN_BOBYQA, size(Params)[1])
+#
+# #= specifying objective functiom =#
+# opt.min_objective = x -> estimation(x,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)["value"]
+#
+# #= specifying upper and lower bounds of parameters =#
+# # opt.lower_bounds = paramsLower
+# # opt.upper_bounds = paramsUpper
+#
+# #= optimization stupping creiteria =#
+# opt.ftol_rel = 0.01
+# # apt.stopval = 10.0
+# # apt.maxeval = 2000
+#
+# #= start the optimizatiom =#
+# (optf,optx,ret) = NLopt.optimize(opt, Params)
+#
+# #= writting the output =#
+# numevals = opt.numevals
+# println("got $optf at $optx after $numevals iterations (returned $ret)")
 
 
 
@@ -2114,7 +2039,7 @@ println("got $optf at $optx after $numevals iterations (returned $ret)")
 # #= Otpim.jl =#
 # #= older optimization code with Optim package =#
 # optimization = Optim.optimize(
-#                 x -> estimation(x, choiceMomentStdBoot, wageMomentStdBoot)[1]
+#                 x -> estimation(x, choiceMomentStdBoot, wageMomentStdBoot)["value"]
 #                 ,params
 #                 ,NelderMead()
 #                 ,Optim.Options(
@@ -2128,16 +2053,16 @@ println("got $optf at $optx after $numevals iterations (returned $ret)")
 # println(Optim.minimizer(optimization))
 
 
-#= ********************************************** =#
-#= LeastSquaresOptim.jl =#
-optimization = LeastSquaresOptim.optimize(
-                x -> estimation(x,
-                    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)[1]
-                ,Params
-                ,iterations = 3000
-                )
-println(optimization.minimizer)
-println(optimization)
+# #= ********************************************** =#
+# #= LeastSquaresOptim.jl =#
+# optimization = LeastSquaresOptim.optimize(
+#                 x -> estimation(x,
+#                     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)["value"]
+#                 ,Params
+#                 ,iterations = 3000
+#                 )
+# println(optimization.minimizer)
+# println(optimization)
 
 
 
@@ -2165,7 +2090,7 @@ println(optimization)
 #
 #
 #
-# optimization= BlackBoxOptim.bboptimize(x -> estimation(x, choiceMomentData, wageMomentData) ;
+# optimization= BlackBoxOptim.bboptimize(x -> estimation(x, choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)["value"]) ;
 #                          SearchRange = bounds,
 #                          method = :adaptive_de_rand_1_bin_radiuslimited ,
 #                          MaxTime = 3*24*60*60 )
@@ -2859,7 +2784,7 @@ end
 # )
 # start_params
 #
-# function sphere(params)
+# function sphere(params,x)
 #     """Spherical criterion function.
 #
 #     The unique local and global optimum of this function is at
@@ -2874,16 +2799,12 @@ end
 #         dict: A dictionary with the entries "value" and "root_contributions".
 #
 #     """
-#     # x1, x2, x3, x4, x5 = convert.(Float64, params.value)
-#     # x1 = convert(Float64, x1)
-#     # x2 = convert(Float64, x2)
-#     # x3 = convert(Float64, x3)
-#     # x4 = convert(Float64, x4)
-#     # x5 = convert(Float64, x5)
-#
-#     x1, x2, x3, x4, x5 = params
-#
-#
+#     x1, x2, x3, x4, x5 = convert.(Float64, params.value)
+#     x1 = convert(Float64, x1)
+#     x2 = convert(Float64, x2)
+#     x3 = convert(Float64, x3)
+#     x4 = convert(Float64, x4)
+#     x5 = convert(Float64, x5)
 #     out = Dict(
 #         "value"=> (x1^2+x2^2+x3^2+x4^2+x5^2),
 #         "root_contributions"=> [x1-2.0,x2-1.0,x3-1.0,x4-1.0,x5-1.0],
@@ -2891,17 +2812,17 @@ end
 #     return out
 # end
 #
-# sphere(start_params)["value"]
+# sphere(start_params,2)["value"]
 # x1, x2, x3, x4, x5 = start_params.value
 #
 # res = estimagic.minimize(
-#     criterion=sphere,
+#     criterion=x -> sphere(x,2),
 #     params=start_params,
 #     algorithm="tao_pounders"
 # )
 # res["solution_params"]["value"]
 #
 #
-# @code_warntype sphere(start_params)
+# @code_warntype sphere(start_params,2)
 #
 # @code_warntype sphere([1.0,2.0,3.0,4.0,5.0])
