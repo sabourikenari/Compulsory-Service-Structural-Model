@@ -69,121 +69,121 @@ end
 
 ###############################################################################
 
-# #= Initial parameters =#
-#
-# # parameters in the utility functions
-# #**********************
-# ω1T1 = 17.193643796698176      ;   # the intercept of staying home α10 for type 1
-# ω1T2 = 17.10101202090928       ;   # the intercept of staying home α10 for type 2
-# ω1T3 = 17.247155615996915      ;   # the intercept of staying home α10 for type 3
-# ω1T4 = 17.116436018425216      ;   # the intercept of staying home α10 for type 4
-#
-# #**********************
-# ω2T1 = 17.12341272473545      ;    # the intercept of studying for type 1
-# ω2T2 = 17.790206579882735     ;    # the intercept of studying for type 2
-# ω2T3 = 18.95548071836632      ;    # the intercept of studying for type 3
-# ω2T4 = 18.71809027001068      ;    # the intercept of studying for type 4
-#
-# α21 = log(3.115121860959169e7)     ;    # study in (t-1)?
-# tc1T1 = log(4.5553275303767666e7)    ;    # education >= 12?
-# # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
-# # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
-# # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
-# tc2 = log(4.708012735120168e7)     ;    # education >= 16?
-#
-# α22 = 0.137 # reward of getting diploma
-# α23 = 0.280 # reward of graduating college
-#
-# # α24 = 0.137 # reward of getting diploma
-# α25 = 0.100 # reward of graduating college
-#
-#
-# #**********************
-# #= occupational choices: 3=white, 4=blue collar =#
-# α3, α4 = log(2.912102156105642e6)   , 0 ;          # the intercept outside exp()
-#
-# #= the intercept inside exp() for type 1 =#
-# ω3T1, ω4T1 = 14.923587474508264   , 16.68237380204532    ;
-# #= the intercept inside exp() for type 2 =#
-# ω3T2, ω4T2 = 14.36700982271307   , 15.993043719456187   ;
-# #= the intercept inside exp() for type 3 =#
-# ω3T3, ω4T3 = 15.149554695776371   , 16.341533053640374   ;
-# #= the intercept inside exp() for type 4 =#
-# ω3T4, ω4T4 = 15.081354895531176   , 16.736029404970487   ;
-#
-#
-# #**********************
-# #= share of each type for those education less than 10 in 15 years old =#
-# πE1T1 = 0.7229226597006355
-# πE1T2 = 0.200245804890741
-# πE1T3 = 0.05042791889785734
-# πE1T4 = 1- πE1T1- πE1T2- πE1T3
-#
-# den = 1/(1-0.7229226597006355-0.200245804890741-0.05042791889785734)
-# πE1T1exp = log(den*0.7229226597006355)
-# πE1T2exp = log(den*0.200245804890741)
-# πE1T3exp = log(den*0.05042791889785734)
-#
-#
-# #= share of each type for those education equalls 10 in 15 years old =#
-# πE2T1 = 0.532182272493524
-# πE2T2 = 0.21200626083052643
-# πE2T3 = 0.121615000603791
-# # πE2T4 = 1- πE2T1- πE2T2- πE2T3
-#
-# den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
-# πE2T1exp = log(den*0.532182272493524)
-# πE2T2exp = log(den*0.21200626083052643)
-# πE2T3exp = log(den*0.1216150006037918)
-#
-#
-#
-# #**********************
-# #= education coefficients =#
-# α31, α41 =  0.13314223937325274 , 0.05543705296821224 ;
-# #= experience in white collar =#
-# α32, α42 = 0.09101988190579493 , 0.02939220222274944 ;
-# #= experience in blue collar =#
-# α33, α43 = 0.0200014722980203 , 0.1129179772059813 ;
-# #= experience^2 in white collar =#
-# α34, α44 = -0.0019514727935415903 ,-0.0021253464755022385 ;
-# #= experience^2 in blue collar =#
-# α35, α45 = -0.003269082102255282 , -0.002950986951463705 ;
-#
-# #= entry cost of without experience =#
-# # α36, α46 = 0.0 , 0.0 ;
-#
-# #**********************
-# α50 = 14.883024878263451 # intercept in util5 (conscription)
-# α51 = log(4.1091249722694878e6) ;    # util5 coeff for if educ >= 12
-# α52 = log(3.117584747501996e6) ;     # util5 coeff for if educ >= 16
-#
-# #**********************
-# #= Variance-covariance of shocks =#
-# σ1 = log(5.38353612340567e14) ;  # variance of ε1 - staying home
-# σ2 = log(3.801914530676497e13) ;  # variance of ε2 - studying
-# σ3 = 0.4980352741234879 ;    # variance of ε3 - white collar
-# σ4 = 0.322421463218912 ;    # variance of ε4 - blue collar
-# σ34 = 0.17007193198363868 ;    # Covariance of white and blue collar shocks
-#
-# σ5 = log(9.163008268122894e13) ;
-#
-# # π1 = 0.79 ;     # share of individuals type 1
-# π1T1exp = -log((1/0.805)-1)
-# π1T2exp = -log((1/0.835)-1)
-# π1T3exp = -log((1/0.93)-1)
-# π1T4exp = -log((1/0.93)-1)
-#
-#
-#
-# δ = 0.7937395498108646 ;      # discount factor
-#
-# #= New parameters in the model =#
-# α11 = -log(6.2705530131153148e6)  # if age<=18
-# α12 = log(1.38e7)                # if educ >=13
-# α13 = -log(8.22e6)                # if age>=30
-#
-# α30study = -log(1.12e7)
+#= Initial parameters =#
+
+# parameters in the utility functions
+#**********************
+ω1T1 = 17.193643796698176      ;   # the intercept of staying home α10 for type 1
+ω1T2 = 17.10101202090928       ;   # the intercept of staying home α10 for type 2
+ω1T3 = 17.247155615996915      ;   # the intercept of staying home α10 for type 3
+ω1T4 = 17.116436018425216      ;   # the intercept of staying home α10 for type 4
+
+#**********************
+ω2T1 = 17.12341272473545      ;    # the intercept of studying for type 1
+ω2T2 = 17.790206579882735     ;    # the intercept of studying for type 2
+ω2T3 = 18.95548071836632      ;    # the intercept of studying for type 3
+ω2T4 = 18.71809027001068      ;    # the intercept of studying for type 4
+
+α21 = log(3.115121860959169e7)     ;    # study in (t-1)?
+tc1T1 = log(4.5553275303767666e7)    ;    # education >= 12?
+# tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
+# tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
+# tc1T4 = 4.553275303767666e7    ;    # education >= 12?
+tc2 = log(4.708012735120168e7)     ;    # education >= 16?
+
+α22 = 0.137 # reward of getting diploma
+α23 = 0.280 # reward of graduating college
+
+# α24 = 0.137 # reward of getting diploma
+α25 = 0.100 # reward of graduating college
+
+
+#**********************
+#= occupational choices: 3=white, 4=blue collar =#
+α3, α4 = log(2.912102156105642e6)   , 0 ;          # the intercept outside exp()
+
+#= the intercept inside exp() for type 1 =#
+ω3T1, ω4T1 = 14.923587474508264   , 16.68237380204532    ;
+#= the intercept inside exp() for type 2 =#
+ω3T2, ω4T2 = 14.36700982271307   , 15.993043719456187   ;
+#= the intercept inside exp() for type 3 =#
+ω3T3, ω4T3 = 15.149554695776371   , 16.341533053640374   ;
+#= the intercept inside exp() for type 4 =#
+ω3T4, ω4T4 = 15.081354895531176   , 16.736029404970487   ;
+
+
+#**********************
+#= share of each type for those education less than 10 in 15 years old =#
+πE1T1 = 0.7229226597006355
+πE1T2 = 0.200245804890741
+πE1T3 = 0.05042791889785734
+πE1T4 = 1- πE1T1- πE1T2- πE1T3
+
+den = 1/(1-0.7229226597006355-0.200245804890741-0.05042791889785734)
+πE1T1exp = log(den*0.7229226597006355)
+πE1T2exp = log(den*0.200245804890741)
+πE1T3exp = log(den*0.05042791889785734)
+
+
+#= share of each type for those education equalls 10 in 15 years old =#
+πE2T1 = 0.532182272493524
+πE2T2 = 0.21200626083052643
+πE2T3 = 0.121615000603791
+# πE2T4 = 1- πE2T1- πE2T2- πE2T3
+
+den = 1/(1-0.532182272493524-0.21200626083052643-0.1216150006037918)
+πE2T1exp = log(den*0.532182272493524)
+πE2T2exp = log(den*0.21200626083052643)
+πE2T3exp = log(den*0.1216150006037918)
+
+
+
+#**********************
+#= education coefficients =#
+α31, α41 =  0.13314223937325274 , 0.05543705296821224 ;
+#= experience in white collar =#
+α32, α42 = 0.09101988190579493 , 0.02939220222274944 ;
+#= experience in blue collar =#
+α33, α43 = 0.0200014722980203 , 0.1129179772059813 ;
+#= experience^2 in white collar =#
+α34, α44 = -0.0019514727935415903 ,-0.0021253464755022385 ;
+#= experience^2 in blue collar =#
+α35, α45 = -0.003269082102255282 , -0.002950986951463705 ;
+
+#= entry cost of without experience =#
+# α36, α46 = 0.0 , 0.0 ;
+
+#**********************
+α50 = 14.883024878263451 # intercept in util5 (conscription)
+α51 = log(4.1091249722694878e6) ;    # util5 coeff for if educ >= 12
+α52 = log(3.117584747501996e6) ;     # util5 coeff for if educ >= 16
+
+#**********************
+#= Variance-covariance of shocks =#
+σ1 = log(5.38353612340567e14) ;  # variance of ε1 - staying home
+σ2 = log(3.801914530676497e13) ;  # variance of ε2 - studying
+σ3 = 0.4980352741234879 ;    # variance of ε3 - white collar
+σ4 = 0.322421463218912 ;    # variance of ε4 - blue collar
+σ34 = 0.17007193198363868 ;    # Covariance of white and blue collar shocks
+
+σ5 = log(9.163008268122894e13) ;
+
+# π1 = 0.79 ;     # share of individuals type 1
+π1T1exp = -log((1/0.805)-1)
+π1T2exp = -log((1/0.835)-1)
+π1T3exp = -log((1/0.93)-1)
+π1T4exp = -log((1/0.93)-1)
+
+
+
+δ = 0.7937395498108646 ;      # discount factor
+
+#= New parameters in the model =#
+α11 = -log(6.2705530131153148e6)  # if age<=18
+α12 = log(1.38e7)                # if educ >=13
+α13 = -log(8.22e6)                # if age>=30
+
+α30study = -log(1.12e7)
 
 
 #################################################################################
@@ -193,116 +193,120 @@ end
 
 
 
-# parameters in the utility functions
-#**********************
-ω1T1 = 17.82168315153809     ;   # the intercept of staying home α10 for type 1
-ω1T2 = 17.15007926098177       ;   # the intercept of staying home α10 for type 2
-ω1T3 = 17.24660614265214      ;   # the intercept of staying home α10 for type 3
-ω1T4 = 17.115606952136623      ;   # the intercept of staying home α10 for type 4
 
-#**********************
-ω2T1 = 17.119574531702852      ;    # the intercept of studying for type 1
-ω2T2 = 17.627845735792466     ;    # the intercept of studying for type 2
-ω2T3 = 18.920259656725246      ;    # the intercept of studying for type 3
-ω2T4 = 18.659213735633564      ;    # the intercept of studying for type 4
+#
+# # parameters in the utility functions
+# #**********************
+# ω1T1 = 17.821135744931293     ;   # the intercept of staying home α10 for type 1
+# ω1T2 = 17.15004146644513       ;   # the intercept of staying home α10 for type 2
+# ω1T3 = 17.246433733426983      ;   # the intercept of staying home α10 for type 3
+# ω1T4 = 17.115490814239713      ;   # the intercept of staying home α10 for type 4
+#
+# #**********************
+# ω2T1 = 17.119188980274988      ;    # the intercept of studying for type 1
+# ω2T2 = 17.62777379230195     ;    # the intercept of studying for type 2
+# ω2T3 = 18.92034595966366      ;    # the intercept of studying for type 3
+# ω2T4 = 18.659296846027726      ;    # the intercept of studying for type 4
+#
+# α21 = log(3.1267153079689432e7)     ;    # study in (t-1)?
+# tc1T1 = log(5.584834912170728e7)    ;    # education >= 12?
+# # tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
+# # tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
+# # tc1T4 = 4.553275303767666e7    ;    # education >= 12?
+# tc2 = log(4.691439603355582e7)     ;    # education >= 16?
+#
+# α22 = 0.12733868752138708 # reward of getting diploma
+# α23 = 0.2690049377167906 # reward of graduating college
+#
+# # α24 = 0.137 # reward of getting diploma
+# α25 = 0.09749960712781927 # reward of graduating college
+#
+#
+# #**********************
+# #= occupational choices: 3=white, 4=blue collar =#
+# α3, α4 = log(2.9093899068247094e6)   , 0 ;          # the intercept outside exp()
+#
+# #= the intercept inside exp() for type 1 =#
+# ω3T1, ω4T1 = 14.983322039452377   , 16.781267388567404    ;
+# #= the intercept inside exp() for type 2 =#
+# ω3T2, ω4T2 = 14.45389803802563   ,  15.996931754009072  ;
+# #= the intercept inside exp() for type 3 =#
+# ω3T3, ω4T3 = 15.149883841504563   , 16.340254459742845   ;
+# #= the intercept inside exp() for type 4 =#
+# ω3T4, ω4T4 = 15.152167145692376   , 16.79930212229079   ;
+#
+#
+# #**********************
+# #= share of each type for those education less than 10 in 15 years old =#
+# πE1T1 = 0.7220606259286249
+# πE1T2 = 0.20108355034376238
+# πE1T3 = 0.05046766358080422
+# πE1T4 = 1- πE1T1- πE1T2- πE1T3
+#
+# # den = 1/(1+πE1T1+πE1T2+πE1T3)
+# πE1T1exp = log(πE1T1/πE1T4)
+# πE1T2exp = log(πE1T2/πE1T4)
+# πE1T3exp = log(πE1T3/πE1T4)
+#
+#
+# #= share of each type for those education equalls 10 in 15 years old =#
+# πE2T1 = 0.530882517036717
+# πE2T2 = 0.21216088412560616
+# πE2T3 = 0.12239449348585607
+# πE2T4 = 1- πE2T1- πE2T2- πE2T3
+#
+# # den = 1/(1-0.530882517036717-0.21216088412560616-0.12239449348585607)
+# πE2T1exp = log(πE2T1/πE2T4)
+# πE2T2exp = log(πE2T2/πE2T4)
+# πE2T3exp = log(πE2T3/πE2T4)
+#
+#
+#
+# #**********************
+# #= education coefficients =#
+# α31, α41 =  0.12216226807760436 , 0.02841539777375748 ;
+# #= experience in white collar =#
+# α32, α42 = 0.08672667020848523 , 0.03265215947361173 ;
+# #= experience in blue collar =#
+# α33, α43 = 0.019363099917443486 , 0.10915693436623712 ;
+# #= experience^2 in white collar =#
+# α34, α44 = -0.0032402574017335382 , -0.001988432162186431 ;
+# #= experience^2 in blue collar =#
+# α35, α45 = -0.00012359503531649587 , -0.002015387979204839 ;
+#
+# #= entry cost of without experience =#
+# # α36, α46 = 0.0 , 0.0 ;
+#
+# #**********************
+# α50 = 14.882579733172172 # intercept in util5 (conscription)
+# α51 = log(4.118803655369918e6) ;    # util5 coeff for if educ >= 12
+# α52 = log(3.1215552728984714e6) ;     # util5 coeff for if educ >= 16
+#
+# #**********************
+# #= Variance-covariance of shocks =#
+# σ1 = log(5.4083437880157475e14) ;  # variance of ε1 - staying home
+# σ2 = log(3.805309933866672e13) ;  # variance of ε2 - studying
+# σ3 = 0.4999282805508579 ;    # variance of ε3 - white collar
+# σ4 = 0.31983281415948445 ;    # variance of ε4 - blue collar
+# σ34 = 0.1713998915956022 ;    # Covariance of white and blue collar shocks
+#
+# σ5 = log(9.130083112135336e13) ;
+#
+# # π1 = 0.79 ;     # share of individuals type 1
+# π1T1exp = -log((1/0.8546724633161266)-1)
+# π1T2exp = -log((1/0.8651298737968329)-1)
+# π1T3exp = -log((1/0.870033456338808)-1)
+# π1T4exp = -log((1/0.8801452913294438)-1)
+#
+#
+# #= New parameters in the model =#
+# α11 = -log(6.229194436639572e6)  # if age<=18
+# α12 = log(1.3840258447282169e7)                # if educ >=13
+# α13 = -log(8.239259299270849e6)                # if age>=30
+#
+# α30study = -log(1.1187216090761894e7)
 
-α21 = log(3.127947391944954e7)     ;    # study in (t-1)?
-tc1T1 = log(5.584367611037764e7)    ;    # education >= 12?
-# tc1T2 = 4.5553275303767666e7    ;    # education >= 12?
-# tc1T3 = 4.5553275303767666e7    ;    # education >= 12?
-# tc1T4 = 4.553275303767666e7    ;    # education >= 12?
-tc2 = log(4.690120401048724e7)     ;    # education >= 16?
 
-α22 = 0.12718417241481733 # reward of getting diploma
-α23 = 0.26916137433720455 # reward of graduating college
-
-# α24 = 0.137 # reward of getting diploma
-α25 = 0.09752163341530008 # reward of graduating college
-
-
-#**********************
-#= occupational choices: 3=white, 4=blue collar =#
-α3, α4 = log(2.9103179249807526e6)   , 0 ;          # the intercept outside exp()
-
-#= the intercept inside exp() for type 1 =#
-ω3T1, ω4T1 = 14.983302437684791   , 16.68128035328377    ;
-#= the intercept inside exp() for type 2 =#
-ω3T2, ω4T2 = 14.453700966583844   ,  15.996641609141951  ;
-#= the intercept inside exp() for type 3 =#
-ω3T3, ω4T3 = 15.150113687028343   , 16.34000927281364   ;
-#= the intercept inside exp() for type 4 =#
-ω3T4, ω4T4 = 15.152349325079504   , 16.799299850287857   ;
-
-
-#**********************
-#= share of each type for those education less than 10 in 15 years old =#
-πE1T1 = 0.7220109617666631
-πE1T2 = 0.20112445742411605
-πE1T3 = 0.05047533780915089
-πE1T4 = 1- πE1T1- πE1T2- πE1T3
-
-# den = 1/(1+πE1T1+πE1T2+πE1T3)
-πE1T1exp = log(πE1T1/πE1T4)
-πE1T2exp = log(πE1T2/πE1T4)
-πE1T3exp = log(πE1T3/πE1T4)
-
-
-#= share of each type for those education equalls 10 in 15 years old =#
-πE2T1 = 0.5307919992664322
-πE2T2 = 0.21223260756304638
-πE2T3 = 0.12240172365727693
-πE2T4 = 1- πE2T1- πE2T2- πE2T3
-
-# den = 1/(1-0.5307919992664322-0.21223260756304638-0.12240172365727693)
-πE2T1exp = log(πE2T1/πE2T4)
-πE2T2exp = log(πE2T2/πE2T4)
-πE2T3exp = log(πE2T3/πE2T4)
-
-
-
-#**********************
-#= education coefficients =#
-α31, α41 =  0.12281107524707463 , 0.029006432014350637 ;
-#= experience in white collar =#
-α32, α42 = 0.0871417715046926 , 0.033300794963460785 ;
-#= experience in blue collar =#
-α33, α43 = 0.021861241963971455 , 0.10914875796170792 ;
-#= experience^2 in white collar =#
-α34, α44 = -0.002677506795761851 , -0.0013317696666555565 ;
-#= experience^2 in blue collar =#
-α35, α45 = -0.0002036184899365944 , -0.0020932366157536854 ;
-
-#= entry cost of without experience =#
-# α36, α46 = 0.0 , 0.0 ;
-
-#**********************
-α50 = 14.882694472771657 # intercept in util5 (conscription)
-α51 = log(4.1184460232010423e6) ;    # util5 coeff for if educ >= 12
-α52 = log(3.12115895185149e6) ;     # util5 coeff for if educ >= 16
-
-#**********************
-#= Variance-covariance of shocks =#
-σ1 = log(5.409963420386177e14) ;  # variance of ε1 - staying home
-σ2 = log(3.805361394385807e13) ;  # variance of ε2 - studying
-σ3 = 0.49978989614415165 ;    # variance of ε3 - white collar
-σ4 = 0.3195046479204882 ;    # variance of ε4 - blue collar
-σ34 = 0.17100432028454915 ;    # Covariance of white and blue collar shocks
-
-σ5 = log(9.13043246350964e13) ;
-
-# π1 = 0.79 ;     # share of individuals type 1
-π1T1exp = -log((1/0.844658096087692)-1)
-π1T2exp = -log((1/0.8551402590252665)-1)
-π1T3exp = -log((1/0.9300216169337843)-1)
-π1T4exp = -log((1/0.9301572317205633)-1)
-
-
-#= New parameters in the model =#
-α11 = -log(6.229772895023346e6)  # if age<=18
-α12 = log(1.3842125100655552e7)                # if educ >=13
-α13 = -log(8.23352514077194e6)                # if age>=30
-
-α30study = -log(1.1191193443162598e7)
 
 
 
@@ -385,6 +389,69 @@ Params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
 #     2.5891070900286084
 # ]
 
+
+
+#=
+    the best found from changing the best result from first draf (:
+=#
+Params = [
+17.821135744931293
+17.15004146644513
+17.246433733426983
+17.115490814239713
+-15.644757578492984
+16.443092181916015
+-15.92442100698004
+17.119188980274988
+17.62777379230195
+18.92034595966366
+18.659296846027726
+17.25807868210704
+17.838150523896807
+17.663835137991445
+0.12733868752138708
+0.2690049377167906
+0.09749960712781927
+-16.230282263881172
+14.883453963155073
+14.983322039452377
+14.45389803802563
+15.149883841504563
+15.152167145692376
+0.12216226807760436
+0.08672667020848523
+0.021363099917443486
+-0.0032402574017335382
+0.00012359503531649587
+16.781267388567404
+15.996931754009072
+16.340254459742845
+16.79930212229079
+0.02841539777375748
+0.03265215947361173
+0.10915693436623712
+-0.001988432162186431
+-0.002015387979204839
+14.882579733172172
+15.231073304248538
+14.953841920486695
+33.92413420890598
+31.27000365128608
+0.4999282805508579
+0.31983281415948445
+0.1713998915956022
+32.1451810066792
+3.309193674530016
+2.0308050647750893
+0.6484173757852266
+1.372514905948539
+0.4553190319516045
+-0.09477646109032327
+1.6934129075613464
+1.7754156968779518
+2.587203379959395
+2.588923306575371
+]
 
 #= ***************************************************** =#
 
@@ -628,8 +695,8 @@ end
 
 
 
-#= last estimated parameter that is in the latex report =#
-
+# #= last estimated parameter that is in the latex report =#
+#
 # Params = [
 # 17.206210410475922
 # 16.80100236132292
