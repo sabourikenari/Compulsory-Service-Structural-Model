@@ -1249,7 +1249,7 @@ function estimation(params,
         bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
     end
 
-    δ = 0.92 #0.7937395498108646 ;      # discount factor
+    δ = 0.92#0.7937395498108646 ;      # discount factor
 
     #=****************************************************=#
     #= check the validity of the input parameters =#
@@ -1958,7 +1958,7 @@ if ENV["USER"] == "ehsan"
 end
 
 
-for i in 1:3
+# for i in 1:3
 print("\nEstimation started:")
 start = Dates.unix2datetime(time())
 
@@ -1967,10 +1967,19 @@ result = estimation(Params,
 
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
 print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
-end
+# end
 
 
-# @code_warntype estimation(params)
+# Params = Params .* (1.0 .+ ((rand(size(Params,1)).*0.1).-0.05) )
+#
+# print("\nEstimation started:")
+# start = Dates.unix2datetime(time())
+#
+# result = estimation(Params,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+#
+# finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
+# print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
 
 
 
@@ -2173,7 +2182,7 @@ end
 
 
 
-# ################################################################################
+################################################################################
 # # #= estimating standard error's of the model parameters =#
 # #
 # # # Pkg.add("ForwardDiff")
@@ -2233,7 +2242,9 @@ end
 #
 # error = transpose(jac) * W * jac ;
 # writedlm("/home/sabouri/Labor/CodeOutput/error.csv", error , ',')
-#
+
+
+
 
 
 
@@ -2909,89 +2920,89 @@ end
 
 
 
-
-# ## ## ## ## ## ## ##
-
-paramsName=[:ω1T1, :ω1T2, :ω1T3, :ω1T4, :α11, :α12, :α13 ,
-        :ω2T1, :ω2T2, :ω2T3, :ω2T4,
-        :α21, :tc1T1, :tc2, :α22, :α23, :α25, :α30study,
-        :α3, :ω3T1, :ω3T2, :ω3T3, :ω3T4, :α31, :α32, :α33, :α34, :α35,
-            :ω4T1, :ω4T2, :ω4T3, :ω4T4, :α41, :α42, :α43, :α44, :α45,
-        :α50, :α51, :α52,
-        :σ1, :σ2, :σ3, :σ4, :σ34 ,:σ5,
-        :πE1T1, :πE1T2, :πE1T3,
-        :πE2T1, :πE2T2, :πE2T3,
-        :π1T1, :π1T2, :π1T3, :π1T4  ]
-
-IsLog = [0, 0, 0, 0, 1, 1, 1 ,
-        0, 0, 0, 0,
-        1, 1, 1, 0, 0, 0, 1,
-        1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 1,
-        1, 1, 0, 0, 0 ,1,
-        0, 0, 0,
-        0, 0, 0,
-        0, 0, 0, 0 ] ;
-
-
-
-
-run(`sshpass -p 'S@bouri1399' scp sabouri@192.168.84.5:/home/sabouri/Labor/CodeOutput/error.csv /home/ehsan/Dropbox/Labor/Codes/Moments/`)
-error = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/error.csv", ',',Float64)
-varParams = pinv(error)
-
-
-print("\n \n \n")
-for i in 1:size(Params,1)
-    if varParams[i,i]>0
-        print("# number ",i,)
-        if IsLog[i] == 0
-            print("# IsLog = 0 \n")
-            print("# param ",paramsName[i]," = ",Params[i],"\n")
-            print(paramsName[i],"STD"," = ",sqrt(varParams[i,i]),"\n \n")
-        end
-        if IsLog[i] == 1
-            print("# IsLog = 1 \n")
-            if Params[i] > 0
-                Mean = Params[i]
-                print("# param ",paramsName[i]," = ",exp(Params[i]),"\n")
-            else
-                Mean = -Params[i]
-                print("# param ",paramsName[i]," = ",-exp(-Params[i]),"\n")
-            end
-
-            print(paramsName[i],"STD"," = ",sqrt(varParams[i,i]),"\n \n")
-        end
-    end
-end
-
-
-print("\n \n \n")
-for i in 1:size(Params,1)
-    print("# number ",i,)
-    if IsLog[i] == 0
-        print("# IsLog = 0 \n")
-        print("# param ",paramsName[i]," = ",Params[i],"\n")
-        print(paramsName[i],"STD"," = ",sqrt(abs(varParams[i,i])),"\n \n")
-    end
-    if IsLog[i] == 1
-        print("# IsLog = 1 \n")
-        if Params[i] > 0
-            Mean = Params[i]
-            print("# param ",paramsName[i]," = ",exp(Params[i]),"\n")
-        else
-            Mean = -Params[i]
-            print("# param ",paramsName[i]," = ",-exp(-Params[i]),"\n")
-        end
-        Std = sqrt(varParams[i,i])
-
-        x = rand(Normal(Mean, Std) , 10000000);
-        y = exp.(x);
-
-        print(paramsName[i],"STD"," = ",std(y),"\n \n")
-    end
-end
+#
+# # ## ## ## ## ## ## ##
+#
+# paramsName=[:ω1T1, :ω1T2, :ω1T3, :ω1T4, :α11, :α12, :α13 ,
+#         :ω2T1, :ω2T2, :ω2T3, :ω2T4,
+#         :α21, :tc1T1, :tc2, :α22, :α23, :α25, :α30study,
+#         :α3, :ω3T1, :ω3T2, :ω3T3, :ω3T4, :α31, :α32, :α33, :α34, :α35,
+#             :ω4T1, :ω4T2, :ω4T3, :ω4T4, :α41, :α42, :α43, :α44, :α45,
+#         :α50, :α51, :α52,
+#         :σ1, :σ2, :σ3, :σ4, :σ34 ,:σ5,
+#         :πE1T1, :πE1T2, :πE1T3,
+#         :πE2T1, :πE2T2, :πE2T3,
+#         :π1T1, :π1T2, :π1T3, :π1T4  ]
+#
+# IsLog = [0, 0, 0, 0, 1, 1, 1 ,
+#         0, 0, 0, 0,
+#         1, 1, 1, 0, 0, 0, 1,
+#         1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#             0, 0, 0, 0, 0, 0, 0, 0, 0,
+#         0, 1, 1,
+#         1, 1, 0, 0, 0 ,1,
+#         0, 0, 0,
+#         0, 0, 0,
+#         0, 0, 0, 0 ] ;
+#
+#
+#
+#
+# run(`sshpass -p 'S@bouri1399' scp sabouri@192.168.84.5:/home/sabouri/Labor/CodeOutput/error.csv /home/ehsan/Dropbox/Labor/Codes/Moments/`)
+# error = readdlm("/home/ehsan/Dropbox/Labor/Codes/Moments/error.csv", ',',Float64)
+# varParams = pinv(error)
+#
+#
+# # print("\n \n \n")
+# # for i in 1:size(Params,1)
+# #     if varParams[i,i]>0
+# #         print("# number ",i,)
+# #         if IsLog[i] == 0
+# #             print("# IsLog = 0 \n")
+# #             print("# param ",paramsName[i]," = ",Params[i],"\n")
+# #             print(paramsName[i],"STD"," = ",sqrt(varParams[i,i]),"\n \n")
+# #         end
+# #         if IsLog[i] == 1
+# #             print("# IsLog = 1 \n")
+# #             if Params[i] > 0
+# #                 Mean = Params[i]
+# #                 print("# param ",paramsName[i]," = ",exp(Params[i]),"\n")
+# #             else
+# #                 Mean = -Params[i]
+# #                 print("# param ",paramsName[i]," = ",-exp(-Params[i]),"\n")
+# #             end
+# #
+# #             print(paramsName[i],"STD"," = ",sqrt(varParams[i,i]),"\n \n")
+# #         end
+# #     end
+# # end
+#
+#
+# print("\n \n \n")
+# for i in 1:size(Params,1)
+#     print("# number ",i,)
+#     if IsLog[i] == 0
+#         print("# IsLog = 0 \n")
+#         print("# param ",paramsName[i]," = ",Params[i],"\n")
+#         print(paramsName[i],"STD"," = ",sqrt(varParams[i,i]),"\n \n")
+#     end
+#     if IsLog[i] == 1
+#         print("# IsLog = 1 \n")
+#         if Params[i] > 0
+#             Mean = Params[i]
+#             print("# param ",paramsName[i]," = ",exp(Params[i]),"\n")
+#         else
+#             Mean = -Params[i]
+#             print("# param ",paramsName[i]," = ",-exp(-Params[i]),"\n")
+#         end
+#         Std = sqrt(varParams[i,i])
+#
+#         x = rand(Normal(Mean, Std) , 10000000);
+#         y = exp.(x);
+#
+#         print(paramsName[i],"STD"," = ",std(y),"\n \n")
+#     end
+# end
 
 
 
