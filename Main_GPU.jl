@@ -90,8 +90,6 @@ using Optim
 # using BlackBoxOptim
 
 
-using Distributions
-
 using Compat.Dates
 
 using SharedArrays
@@ -175,6 +173,7 @@ function util5GPU(α50, α51, α52, educ, ε5)
     util= α50 + α51*(educ>12) + α52*(educ>16) + ε5
     return util
 end
+
 
 ################################################################################
 #=
@@ -427,11 +426,11 @@ function solveGroup2AllType(ω1, α11, α12, α13,
     x3State   = 0 :1 : x3Max     # x3 experience in white-collar
     x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
 
-    ageStateCount  = size(ageState)[1]
-    educStateCount = size(educState)[1]
-    slStateCount   = size(slState)[1]
-    x3StateCount   = size(x3State)[1]
-    x4StateCount   = size(x4State)[1]
+    ageStateCount  = length(ageState)
+    educStateCount = length(educState)
+    slStateCount   = length(slState)
+    x3StateCount   = length(x3State)
+    x4StateCount   = length(x4State)
     typeCount      = 4
 
 
@@ -489,7 +488,7 @@ epsSolveσ=[ σ1   0.0  0.0   0.0 ;
             0.0  0.0  σ3    σ34 ;
             0.0  0.0  σ34   σ4  ] ;
 
-M = 200 ;
+M = 300 ;
 epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
 
 for i in 1:5
@@ -508,7 +507,12 @@ for i in 1:5
 end
 
 
-
+@code_warntype solveGroup2AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
+                [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+                α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
+                α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
+                δ,
+                epssolve) ;
 
 
 
@@ -960,7 +964,7 @@ M=200;
 epssolveGroup1= rand(MersenneTwister(1234),MvNormal(epsSolveMeanGroup1, epsSolveσGroup1) , M) ;
 
 
-for i in 1:5
+for i in 1:4
     print("Emax Group 1 calculation: \n")
     start = Dates.unix2datetime(time())
 
@@ -975,7 +979,6 @@ for i in 1:5
     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
 end
-
 
 
 
@@ -1729,9 +1732,9 @@ function estimation(params,
     however it makes a little inconsistecy, because Julia can not understand
     the type of input in compile time, but it does not make a trouble fro performance
     =#
-    if ENV["USER"] == "sabouri"
-        bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
-    end
+    # if ENV["USER"] == "sabouri"
+    #     bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
+    # end
 
     δ = 0.92#0.7937395498108646 ;      # discount factor
 
@@ -1996,7 +1999,7 @@ function estimation(params,
                                 NGroup2T1, EmaxGroup2AllType, weightsT1, 1111, 1)
         simGroup2T1[:, simCol["type"]] .= 1
     else
-        simGroup2T1 = reshape([],0,11)
+        simGroup2T1 = Array{Float64,2}(undef,(0,11))
     end
 
     weightsT2 = [
@@ -2016,7 +2019,7 @@ function estimation(params,
                                 NGroup2T2, EmaxGroup2AllType, weightsT2, 2222, 2)
         simGroup2T2[:, simCol["type"]] .= 2
     else
-        simGroup2T2 = reshape([],0,11)
+        simGroup2T2 = Array{Float64,2}(undef,(0,11))
     end
 
     weightsT3 = [
@@ -2036,7 +2039,7 @@ function estimation(params,
                                 NGroup2T3, EmaxGroup2AllType, weightsT3, 1345, 3)
         simGroup2T3[:, simCol["type"]] .= 3
     else
-        simGroup2T3 = reshape([],0,11)
+        simGroup2T3 = Array{Float64,2}(undef,(0,11))
     end
 
     weightsT4 = [
@@ -2057,7 +2060,7 @@ function estimation(params,
                                 NGroup2T4, EmaxGroup2AllType, weightsT4, 5432, 4)
         simGroup2T4[:, simCol["type"]] .= 4
     else
-        simGroup2T4 = reshape([],0,11)
+        simGroup2T4 = Array{Float64,2}(undef,(0,11))
     end
 
 
@@ -2074,7 +2077,7 @@ function estimation(params,
                                 NGroup1T1, EmaxGroup1AllType, weightsT1, 3333, 1)
         simGroup1T1[:, simCol["type"]] .= 1
     else
-        simGroup1T1 = reshape([],0,11)
+        simGroup1T1 = Array{Float64,2}(undef,(0,11))
     end
     NGroup1T2 = E1T2+E2T2+E3T2+E4T2 - NGroup2T2
     if NGroup1T2 > 0
@@ -2087,7 +2090,7 @@ function estimation(params,
                                 NGroup1T2, EmaxGroup1AllType, weightsT2, 4444, 2)
         simGroup1T2[:, simCol["type"]] .= 2
     else
-        simGroup1T2 = reshape([],0,11)
+        simGroup1T2 = Array{Float64,2}(undef,(0,11))
     end
 
     NGroup1T3 = E1T3+E2T3+E3T3+E4T3 - NGroup2T3
@@ -2101,7 +2104,7 @@ function estimation(params,
                                 NGroup1T3, EmaxGroup1AllType, weightsT3, 5234, 3)
         simGroup1T3[:, simCol["type"]] .= 3
     else
-        simGroup1T3 = reshape([],0,11)
+        simGroup1T3 = Array{Float64,2}(undef,(0,11))
     end
 
     NGroup1T4 = E1T4+E2T4+E3T4+E4T4 - NGroup2T4
@@ -2115,7 +2118,8 @@ function estimation(params,
                                 NGroup1T4, EmaxGroup1AllType, weightsT4, 7764, 4)
         simGroup1T4[:, simCol["type"]] .= 4
     else
-        simGroup1T4 = reshape([],0,11)
+        simGroup1T4 = Array{Float64,2}(undef,(0,11))
+
     end
 
 
@@ -2199,7 +2203,7 @@ function estimation(params,
         "educatedSim"         => 4
     )
     educatedShare[:,1:3]= educatedShareData[:,1:3];
-
+    [i for i in 16:20]
 
     #=****************************************************=#
     #=
@@ -2213,7 +2217,7 @@ function estimation(params,
 
         #= mean income for each occupation moment condition =#
 
-        for educated in unique(wageMoment[ wageMoment[:,wageCol["age"]].== age , wageCol["educated"] ])
+        for educated in [0,1]#unique(wageMoment[ wageMoment[:,wageCol["age"]].== age , wageCol["educated"] ])
             for collar in unique(wageMoment[ wageMoment[:,wageCol["age"]].== age , wageCol["collar"] ])
 
                 #= amendment =#
@@ -2309,7 +2313,7 @@ function estimation(params,
     calculating error = sum squared of percentage distance
     between data moment and moment from model simulation
     =#
-    contributions = [1]
+    contributions = [1.0]
 
     result, contributions= SMMCalculate(choiceMoment, wageMoment, educatedShare,
             wageCol, choiceCol, educatedCol,
@@ -2350,37 +2354,37 @@ function estimation(params,
 
 
     #=****************************************************=#
-    if ENV["USER"] == "ehsan"
-        #= Linux =#
-        writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
-    end
-    if ENV["USER"]=="sabouri"
-        if (result < bestResult[1])
-        #= Server =#
-        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
-        writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
-        writedlm( "/home/sabouri/Labor/CodeOutput/sim.csv",  sim, ',');
-
-        # ***************************************************
-        # send email after completing the optimization
-        # opt = SendOptions(
-        #   isSSL = true,
-        #   username = "juliacodeserver@gmail.com",
-        #   passwd = "JuliaCodeServer")
-        # #Provide the message body as RFC5322 within an IO
-        # body = IOBuffer(
-        #   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-        #   "From: You <juliacodeserver@gmail.com>\r\n" *
-        #   "To: ehsansaboori75@gmail.com\r\n" *
-        #   "Subject: Julia Code\r\n" *
-        #   "\r\n" *
-        #   "Better solution found (: \r\n")
-        # url = "smtps://smtp.gmail.com:465"
-        # rcpt = ["<ehsansaboori75@gmail.com>"]
-        # from = "<juliacodeserver@gmail.com>"
-        # resp = send(url, rcpt, from, body, opt)
-        end
-    end
+    # if ENV["USER"] == "ehsan"
+    #     #= Linux =#
+    #     writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
+    # end
+    # if ENV["USER"]=="sabouri"
+    #     if (result < bestResult[1])
+    #     #= Server =#
+    #     writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
+    #     # writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
+    #     writedlm( "/home/sabouri/Labor/CodeOutput/sim.csv",  sim, ',');
+    #
+    #     # ***************************************************
+    #     # send email after completing the optimization
+    #     # opt = SendOptions(
+    #     #   isSSL = true,
+    #     #   username = "juliacodeserver@gmail.com",
+    #     #   passwd = "JuliaCodeServer")
+    #     # #Provide the message body as RFC5322 within an IO
+    #     # body = IOBuffer(
+    #     #   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
+    #     #   "From: You <juliacodeserver@gmail.com>\r\n" *
+    #     #   "To: ehsansaboori75@gmail.com\r\n" *
+    #     #   "Subject: Julia Code\r\n" *
+    #     #   "\r\n" *
+    #     #   "Better solution found (: \r\n")
+    #     # url = "smtps://smtp.gmail.com:465"
+    #     # rcpt = ["<ehsansaboori75@gmail.com>"]
+    #     # from = "<juliacodeserver@gmail.com>"
+    #     # resp = send(url, rcpt, from, body, opt)
+    #     end
+    # end
 
 
     #= return SMM error calculated =#
@@ -2478,7 +2482,7 @@ if ENV["USER"] == "ehsan"
 end
 
 
-# for i in 1:3
+for i in 1:3
 print("\nEstimation started:")
 start = Dates.unix2datetime(time())
 
@@ -2487,7 +2491,11 @@ result = estimation(Params,
 
 finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
 print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
-# end
+end
+
+# @code_warntype estimation(Params,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot)
+
 
 
 # Params = Params .* (1.0 .+ ((rand(size(Params,1)).*0.1).-0.05) )
