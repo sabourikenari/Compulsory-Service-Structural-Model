@@ -158,13 +158,13 @@ end
 
 #= utility when choice is whitel-collar occupation =#
 function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, x3, x4, educ, ε3, α22, α23)
-    util= (exp((α30+ α31*educ+ α32*x3+ α33*x4+ α34*(x3^2)+ α35*(x4^2))+ α36*(x3==0)+ α22*(educ>=12)+ α23*(educ>=16) + ε3) + α3)
+    util= (exp((α30+ α31*educ+ α32*x3+ α33*x4+ α34*(x3^2)+ α35*(x4^2))- α36*(x3==0)+ α22*(educ>=12)+ α23*(educ>=16) + ε3) + α3)
     return util
 end
 
 #= utility when choice is blue-collar occupation =#
 function util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, x3, x4, educ, ε4, α24, α25)
-    util= (exp((α40+ α41*educ+ α42*x3+ α43*x4+ α44*(x3^2)+ α45*(x4^2))+ α46*(x4==0)+ α24*(educ>=12)+ α25*(educ>=16)+ ε4) + α4)
+    util= (exp((α40+ α41*educ+ α42*x3+ α43*x4+ α44*(x3^2)+ α45*(x4^2))- α46*(x4==0)+ α24*(educ>=12)+ α25*(educ>=16)+ ε4) + α4)
     return util
 end
 
@@ -260,8 +260,7 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
         return nothing
     end
 
-
-
+    #= specify the endowment vector for the individual=#
     ω1 = ω1T1,ω1T2,ω1T3,ω1T4
     ω2 = ω2T1,ω2T2,ω2T3,ω2T4
     ω3 = ω3T1,ω3T2,ω3T3,ω3T4
@@ -320,26 +319,13 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
         enum3 = EmaxGroup2Index(age+1, educ, 0, (x3+1*(x3!=x3Max)), x4, type)
         enum4 = EmaxGroup2Index(age+1, educ, 0, x3, (x4+1*(x4!=x4Max)), type)
 
-        # if enum1 <=  (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
         EmaxNext1 = Emax[enum1]
-        # else
-        #     EmaxNext1 = 0.0
-        # end
-        # if enum2 <=  (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+
         EmaxNext2 = Emax[enum2]
-        # else
-        #     EmaxNext2 = 0.0
-        # end
-        # if enum3 <=  (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+
         EmaxNext3 = Emax[enum3]
-        # else
-        #     EmaxNext3 = 0.0
-        # end
-        # if enum4 <=  (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+
         EmaxNext4 = Emax[enum4]
-        # else
-        #     EmaxNext4 = 0.0
-        # end
 
 
         if educ < 22
@@ -397,10 +383,10 @@ end
 
 
 #= solve Emax for conscription group 2: Not obligated to attent conscription =#
-function solveGroup2AllType(ω1, α11, α12, α13,
-            ω2, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-            α3, ω3, α31, α32, α33, α34, α35, α36,
-            α4, ω4, α41, α42, α43, α44, α45, α46,
+function solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
+            ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
             δ,
             epssolve)
 
@@ -443,21 +429,16 @@ function solveGroup2AllType(ω1, α11, α12, α13,
     numblocks = ceil(Int, educStateCount*slStateCount*x3StateCount*x4StateCount*typeCount/256)
 
 
-    ω1T1,ω1T2,ω1T3,ω1T4 = ω1
-    ω2T1,ω2T2,ω2T3,ω2T4 = ω2
-    ω3T1,ω3T2,ω3T3,ω3T4 = ω3
-    ω4T1,ω4T2,ω4T3,ω4T4 = ω4
-
     valueFunction = epssolve
 
     for age in ageState
 
         # @sync @distributed for enum in 1:(educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
 
-        @cuda threads=256 blocks=numblocks valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
-                                                            ω2T1,ω2T2,ω2T3,ω2T4, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
-                                                            α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36,
-                                                            α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46,
+        @cuda threads=256 blocks=numblocks valueFunctionGroup2!(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
+                                                            ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
+                                                            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+                                                            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
                                                             δ,
                                                             epssolve,
                                                             age,
@@ -479,45 +460,50 @@ end
 
 
 
-# test section
-# here, we check whether Emax function is working perfect or not.
-include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
-epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
-epsSolveσ=[ σ1   0.0  0.0   0.0 ;
-            0.0  σ2   0.0   0.0 ;
-            0.0  0.0  σ3    σ34 ;
-            0.0  0.0  σ34   σ4  ] ;
+# #= test section =#
+# #= here we check whether Emax function is working perfect or not. =#
+# include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
+# epsSolveMean=[0.0, 0.0, 0.0, 0.0] ;
+# epsSolveσ=[ σ1   0.0  0.0   0.0 ;
+#             0.0  σ2   0.0   0.0 ;
+#             0.0  0.0  σ3    σ34 ;
+#             0.0  0.0  σ34   σ4  ] ;
+#
+# M = 300 ;
+# epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
+#
+# for i in 1:3
+#     print("Emax Group 2 calculation: \n")
+#     start = Dates.unix2datetime(time())
+#
+#     EmaxGroup2GPU = solveGroup2AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
+#                     [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+#                     α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
+#                     α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
+#                     0.92,
+#                     epssolve) ;
+#
+#     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+#     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
+# end
 
-M = 300 ;
-epssolve=rand(MersenneTwister(1234),MvNormal(epsSolveMean, epsSolveσ) , M) ;
 
-for i in 1:5
-    print("Emax Group 2 calculation: \n")
-    start = Dates.unix2datetime(time())
-
-    EmaxGroup2GPU = solveGroup2AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
-                    [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                    α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
-                    α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
-                    δ,
-                    epssolve) ;
-
-    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-    print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
-end
+# @code_warntype solveGroup2AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
+#                 [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+#                 α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
+#                 α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
+#                 δ,
+#                 epssolve) ;
 
 
-@code_warntype solveGroup2AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
-                [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
-                α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
-                δ,
-                epssolve) ;
 
 
 
 ###################################################
-
+#=
+here I checked whether the GPU code and CPU parallel codes
+reached the same result for the Emax values or not.
+=#
 
 # for ii in 1:500000
 #     if !(EmaxGroup2[ii] ≈ EmaxGroup2GPU[ii])
@@ -562,11 +548,6 @@ end
 #         end
 #     end
 # end
-
-
-################################################################################
-
-
 
 
 
@@ -664,7 +645,7 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
     end
 
 
-
+    #= specify the endowment vector for the individual=#
     ω1 = ω1T1,ω1T2,ω1T3,ω1T4
     ω2 = ω2T1,ω2T2,ω2T3,ω2T4
     ω3 = ω3T1,ω3T2,ω3T3,ω3T4
@@ -870,10 +851,10 @@ end
 
 
 #= Solve Emax for conscription goup 1: obligated to attent conscription =#
-function solveGroup1AllType(ω1, α11, α12, α13,
-            ω2, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-            α3, ω3, α31, α32, α33, α34, α35, α36,
-            α4, ω4, α41, α42, α43, α44, α45, α46,
+function solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
+            ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
             α50, α51, α52,
             δ,
             epssolve)
@@ -921,12 +902,6 @@ function solveGroup1AllType(ω1, α11, α12, α13,
     numblocks = ceil(Int, educStateCount*slStateCount*x3StateCount*x4StateCount*x5StateCount*typeCount/256)
 
 
-    ω1T1,ω1T2,ω1T3,ω1T4 = ω1
-    ω2T1,ω2T2,ω2T3,ω2T4 = ω2
-    ω3T1,ω3T2,ω3T3,ω3T4 = ω3
-    ω4T1,ω4T2,ω4T3,ω4T4 = ω4
-
-
 
     for age in ageState
 
@@ -951,34 +926,34 @@ end#
 
 
 
-#= test section =#
-#= here we check whether Emax function is workign perfect or not. =#
-include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
-epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0, 0.0] ;
-epsSolveσGroup1=[σ1   0.0  0.0  0.0  0.0 ;
-                0.0  σ2   0.0  0.0  0.0 ;
-                0.0  0.0  σ3   σ34  0.0 ;
-                0.0  0.0  σ34  σ4   0.0
-                0.0  0.0  0.0  0.0  σ5  ] ;
-M=200;
-epssolveGroup1= rand(MersenneTwister(1234),MvNormal(epsSolveMeanGroup1, epsSolveσGroup1) , M) ;
-
-
-for i in 1:4
-    print("Emax Group 1 calculation: \n")
-    start = Dates.unix2datetime(time())
-
-    EmaxGroup1= solveGroup1AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
-                [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
-                α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
-                α50, α51, α52,
-                δ,
-                epssolveGroup1) ;
-
-    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
-    print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
-end
+# #= test section =#
+# #= here we check whether Emax function is working perfect or not. =#
+# include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/modelParameters.jl")
+# epsSolveMeanGroup1= [0.0, 0.0, 0.0, 0.0, 0.0] ;
+# epsSolveσGroup1=[σ1   0.0  0.0  0.0  0.0 ;
+#                 0.0  σ2   0.0  0.0  0.0 ;
+#                 0.0  0.0  σ3   σ34  0.0 ;
+#                 0.0  0.0  σ34  σ4   0.0
+#                 0.0  0.0  0.0  0.0  σ5  ] ;
+# M=200;
+# epssolveGroup1= rand(MersenneTwister(1234),MvNormal(epsSolveMeanGroup1, epsSolveσGroup1) , M) ;
+#
+#
+# for i in 1:3
+#     print("Emax Group 1 calculation: \n")
+#     start = Dates.unix2datetime(time())
+#
+#     EmaxGroup1= solveGroup1AllType([14.0,14.0,14.0,14.0], α11, α12, α13,
+#                 [14.0,14.0,14.0,14.0], α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
+#                 α3, [14.0,14.0,14.0,14.0], α31, α32, α33, α34, α35, 0,
+#                 α4, [14.0,14.0,14.0,14.0], α41, α42, α43, α44, α45, 0,
+#                 α50, α51, α52,
+#                 0.92,
+#                 epssolveGroup1) ;
+#
+#     finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000;
+#     print("TOTAL ELAPSED TIME: ", finish, " seconds. \n")
+# end
 
 
 
@@ -1656,6 +1631,71 @@ function SMMCalculate(choiceMoment, wageMoment, educatedShare,
     return SMMError, contributions
 end
 
+
+
+
+#= ************************************************************* =#
+
+function constraintError(sim, simCol, contributions)
+
+    whiteConstraintError = 0.0
+    studyConstraintError = 0.0
+    blueConstraintError  = 0.0
+    homeConstraintError  = 0.0
+
+    for age in 40:55
+
+        flag2 = [
+            count(
+                x -> x == i,
+                sim[(sim[:, simCol["age"]].==age)
+                , simCol["choice"]],
+                ) for i = 1:5
+        ]
+
+        flag2 = flag2 / sum(flag2)
+
+        error = ((flag2[3]-0.13)/0.004)
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("10\n")
+        end
+        contributions = [contributions; error]
+        whiteConstraintError = whiteConstraintError + error^2
+
+        error = (flag2[2]-0)/0.005
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("11\n")
+        end
+        contributions = [contributions; error]
+        studyConstraintError = studyConstraintError + error^2
+
+
+
+        error = (flag2[4]-0.78)/0.005
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("11\n")
+        end
+        contributions = [contributions; error]
+        blueConstraintError = blueConstraintError + error^2
+
+        error = (flag2[4]-0.78)/0.005
+        if (error==Inf)|(error==NaN)
+            error = 10
+            print("11\n")
+        end
+        contributions = [contributions; error]
+        homeConstraintError = homeConstraintError + error^2
+
+    end
+
+    output = whiteConstraintError + studyConstraintError + blueConstraintError + homeConstraintError
+    return output, contributions
+end
+
+
 ################################################################################
 #= Define estimation Function =#
 
@@ -1669,8 +1709,8 @@ function estimation(params,
     ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
     ω2T1, ω2T2, ω2T3, ω2T4,
     α21, tc1T1, tc2, α22, α23, α25, α30study,
-    α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35,
-        ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45,
+    α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+        ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
     α50, α51, α52,
     σ1, σ2, σ3, σ4, σ34 ,σ5,
     πE1T1exp, πE1T2exp, πE1T3exp,
@@ -1711,14 +1751,16 @@ function estimation(params,
     α4 = 0.0  ;  # non pecuniary utility of blue-collar asssumed zero
     # π1 = 0.78 ;  # share of individuals type 1
 
-    #= entry cost of without experience =#
-    α36, α46 = 0.0 , 0.0 ;
+    #= We assume that tuition cost is equall for all 4 different types =#
     tc1T2 = tc1T1
     tc1T3 = tc1T1
     tc1T4 = tc1T1
+
+    #= We assume that high school graduation effect on skills and
+    consequently wages are similar in white- and blue-collars occupations =#
     α24 = α22
 
-    N = 50 * 1000 ;   # number of individual to simulate their behaviour
+    N = 5 * 1000 ;   # number of individual to simulate their behaviour
 
     #= share of each education level at 15 years old =#
     # levels are 0, 5, 8, 10
@@ -1732,9 +1774,9 @@ function estimation(params,
     however it makes a little inconsistecy, because Julia can not understand
     the type of input in compile time, but it does not make a trouble fro performance
     =#
-    # if ENV["USER"] == "sabouri"
-    #     bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
-    # end
+    if ENV["USER"] == "sabouri"
+        bestResult = readdlm("/home/sabouri/Labor/CodeOutput/result.csv") ;
+    end
 
     δ = 0.92#0.7937395498108646 ;      # discount factor
 
@@ -1847,15 +1889,10 @@ function estimation(params,
     #             epssolveGroup2)
 
 
-    ω1All = [ω1T1, ω1T2, ω1T3, ω1T4]
-    ω2All = [ω2T1, ω2T2, ω2T3, ω2T4]
-    ω3All = [ω3T1, ω3T2, ω3T3, ω3T4]
-    ω4All = [ω4T1, ω4T2, ω4T3, ω4T4]
-
-    EmaxGroup2AllType = solveGroup2AllType(ω1All, α11, α12, α13,
-                ω2All, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3All, α31, α32, α33, α34, α35, α36,
-                α4, ω4All, α41, α42, α43, α44, α45, α46,
+    EmaxGroup2AllType = solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
+                ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
                 δ,
                 epssolveGroup2)
 
@@ -1919,10 +1956,10 @@ function estimation(params,
     #             epssolveGroup1) ;
 
 
-    EmaxGroup1AllType =  solveGroup1AllType(ω1All, α11, α12, α13,
-                ω2All, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3All, α31, α32, α33, α34, α35, α36,
-                α4, ω4All, α41, α42, α43, α44, α45, α46,
+    EmaxGroup1AllType =  solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
+                ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
+                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36,
+                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46,
                 α50, α51, α52,
                 δ,
                 epssolveGroup1) ;
@@ -2354,37 +2391,37 @@ function estimation(params,
 
 
     #=****************************************************=#
-    # if ENV["USER"] == "ehsan"
-    #     #= Linux =#
-    #     writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
-    # end
-    # if ENV["USER"]=="sabouri"
-    #     if (result < bestResult[1])
-    #     #= Server =#
-    #     writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
-    #     # writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
-    #     writedlm( "/home/sabouri/Labor/CodeOutput/sim.csv",  sim, ',');
-    #
-    #     # ***************************************************
-    #     # send email after completing the optimization
-    #     # opt = SendOptions(
-    #     #   isSSL = true,
-    #     #   username = "juliacodeserver@gmail.com",
-    #     #   passwd = "JuliaCodeServer")
-    #     # #Provide the message body as RFC5322 within an IO
-    #     # body = IOBuffer(
-    #     #   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
-    #     #   "From: You <juliacodeserver@gmail.com>\r\n" *
-    #     #   "To: ehsansaboori75@gmail.com\r\n" *
-    #     #   "Subject: Julia Code\r\n" *
-    #     #   "\r\n" *
-    #     #   "Better solution found (: \r\n")
-    #     # url = "smtps://smtp.gmail.com:465"
-    #     # rcpt = ["<ehsansaboori75@gmail.com>"]
-    #     # from = "<juliacodeserver@gmail.com>"
-    #     # resp = send(url, rcpt, from, body, opt)
-    #     end
-    # end
+    if ENV["USER"] == "ehsan"
+        #= Linux =#
+        writedlm("/home/ehsan/Dropbox/Labor/Codes/Moments/data/sim.csv", sim, ',')
+    end
+    if ENV["USER"]=="sabouri"
+        if (result < bestResult[1])
+        #= Server =#
+        writedlm("/home/sabouri/Labor/CodeOutput/parameters.csv", params , ',') ;
+        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result , ',')     ;
+        writedlm( "/home/sabouri/Labor/CodeOutput/sim.csv",  sim, ',');
+
+        # ***************************************************
+        # send email after completing the optimization
+        # opt = SendOptions(
+        #   isSSL = true,
+        #   username = "juliacodeserver@gmail.com",
+        #   passwd = "JuliaCodeServer")
+        # #Provide the message body as RFC5322 within an IO
+        # body = IOBuffer(
+        #   "Date: Fri, 18 Oct 2013 21:44:29 +0100\r\n" *
+        #   "From: You <juliacodeserver@gmail.com>\r\n" *
+        #   "To: ehsansaboori75@gmail.com\r\n" *
+        #   "Subject: Julia Code\r\n" *
+        #   "\r\n" *
+        #   "Better solution found (: \r\n")
+        # url = "smtps://smtp.gmail.com:465"
+        # rcpt = ["<ehsansaboori75@gmail.com>"]
+        # from = "<juliacodeserver@gmail.com>"
+        # resp = send(url, rcpt, from, body, opt)
+        end
+    end
 
 
     #= return SMM error calculated =#
@@ -2404,73 +2441,11 @@ function estimation(params,
 end
 
 
-function constraintError(sim, simCol, contributions)
-
-    whiteConstraintError = 0.0
-    studyConstraintError = 0.0
-    blueConstraintError  = 0.0
-    homeConstraintError  = 0.0
-
-    for age in 40:55
-
-        flag2 = [
-            count(
-                x -> x == i,
-                sim[(sim[:, simCol["age"]].==age)
-                , simCol["choice"]],
-                ) for i = 1:5
-        ]
-
-        flag2 = flag2 / sum(flag2)
-
-        error = ((flag2[3]-0.13)/0.004)
-        if (error==Inf)|(error==NaN)
-            error = 10
-            print("10\n")
-        end
-        contributions = [contributions; error]
-        whiteConstraintError = whiteConstraintError + error^2
-
-        error = (flag2[2]-0)/0.005
-        if (error==Inf)|(error==NaN)
-            error = 10
-            print("11\n")
-        end
-        contributions = [contributions; error]
-        studyConstraintError = studyConstraintError + error^2
-
-
-
-        error = (flag2[4]-0.78)/0.005
-        if (error==Inf)|(error==NaN)
-            error = 10
-            print("11\n")
-        end
-        contributions = [contributions; error]
-        blueConstraintError = blueConstraintError + error^2
-
-        error = (flag2[4]-0.78)/0.005
-        if (error==Inf)|(error==NaN)
-            error = 10
-            print("11\n")
-        end
-        contributions = [contributions; error]
-        homeConstraintError = homeConstraintError + error^2
-
-    end
-
-    output = whiteConstraintError + studyConstraintError + blueConstraintError + homeConstraintError
-    return output, contributions
-end
-
 
 
 ################################################################################
 #= Initiating the best result on the disk with a large number =#
-result = 1.0e50
-if ENV["USER"] == "sabouri"
-    writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result )
-end
+
 
 #= read data moment files =#
 
@@ -2482,15 +2457,22 @@ if ENV["USER"] == "ehsan"
 end
 
 
-for i in 1:3
-print("\nEstimation started:")
-start = Dates.unix2datetime(time())
+for i in 1:4
 
-result = estimation(Params,
-    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+    result = 1.0e50
+    if ENV["USER"] == "sabouri"
+        writedlm("/home/sabouri/Labor/CodeOutput/result.csv", result )
+    end
 
-finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
-print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+    print("\nEstimation started:")
+    start = Dates.unix2datetime(time())
+
+    result = estimation(Params,
+        choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+
+    finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
+    print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+
 end
 
 # @code_warntype estimation(Params,
@@ -2515,48 +2497,48 @@ end
 #= Optimization =#
 if ENV["USER"] == "sabouri"
 
-println("\n \n \n \n")
-println("optimization started at = " ,Dates.format(now(), "HH:MM"))
-
-
-
-#=**********************************************=#
-#= POUNDERs from estimagic (importing frome ptyhon packages) =#
-using PyCall
-pd = pyimport("pandas");
-estimagic = pyimport("estimagic");
-
-if ENV["USER"] == "sabouri"
-    include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
-end
-if ENV["USER"] == "ehsan"
-    include("/home/ehsan/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
-end
-
-start_params = pd.DataFrame(
-    data=Params,
-    columns=["value"],
-);
-start_params
-
-for i in 1:3
-print("\nEstimation started:")
-start = Dates.unix2datetime(time())
-
-result = estimation_pounders(start_params,
-    choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
-
-finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
-print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
-end
-
-res = estimagic.minimize(
-    criterion= x -> estimation_pounders(x,
-        choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ,
-    params=start_params,
-    algorithm="tao_pounders"
-)
-res["solution_params"]["value"]
+# println("\n \n \n \n")
+# println("optimization started at = " ,Dates.format(now(), "HH:MM"))
+#
+#
+#
+# #=**********************************************=#
+# #= POUNDERs from estimagic (importing frome ptyhon packages) =#
+# using PyCall
+# pd = pyimport("pandas");
+# estimagic = pyimport("estimagic");
+#
+# if ENV["USER"] == "sabouri"
+#     include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
+# end
+# if ENV["USER"] == "ehsan"
+#     include("/home/ehsan/Dropbox/Labor/Codes/GitRepository/estimation_function_pounders.jl");
+# end
+#
+# start_params = pd.DataFrame(
+#     data=Params,
+#     columns=["value"],
+# );
+# start_params
+#
+# for i in 1:3
+# print("\nEstimation started:")
+# start = Dates.unix2datetime(time())
+#
+# result = estimation_pounders(start_params,
+#     choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ;
+#
+# finish = convert(Int, Dates.value(Dates.unix2datetime(time())- start))/1000 ;
+# print("\nTtotal Elapsed Time: ", finish, " seconds. \n")
+# end
+#
+# res = estimagic.minimize(
+#     criterion= x -> estimation_pounders(x,
+#         choiceMomentStdBoot, wageMomentStdBoot, educatedShareStdBoot) ,
+#     params=start_params,
+#     algorithm="tao_pounders"
+# )
+# res["solution_params"]["value"]
 
 
 
