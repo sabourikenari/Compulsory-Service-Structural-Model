@@ -150,14 +150,14 @@ function util1GPU(α10, α11, α12, α13, age, educ, ε1)
 end
 
 #= utility when choice is study =#
-function util2GPU(α20, α21, tc1, tc2, sl, educ, ε2, age, α30study)
-    util= (α20 - α21*(sl == 0)- tc1*(educ>12)- tc2*(educ>16) + α30study*(age>=30) ) + ε2
+function util2GPU(α20, α21, tc1, tc2, LastChoice, educ, ε2, age, α30study)
+    util= (α20 - α21*(LastChoice != 2)- tc1*(educ>12)- tc2*(educ>16) + α30study*(age>=30) ) + ε2
     return util
 end
 
 
 #= utility when choice is whitel-collar occupation =#
-function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
     util= (
     exp((α30+ α31*educ+ α32*x3+ α33*x4+ α34*(x3^2)+ α35*(x4^2))- (α36- α37*(educ>=16))*(x3==0)
     + α22*(educ>=12)+ α23*(educ>=16) + ε3)
@@ -166,7 +166,7 @@ function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, e
 end
 
 #= utility when choice is blue-collar occupation =#
-function util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+function util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
     util= (
     exp((α40+ α41*educ+ α42*x3+ α43*x4+ α44*(x3^2)+ α45*(x4^2))- (α46- α46*(educ>=16))*(x4==0)
     + α24*(educ>=12)+ α25*(educ>=16)+ ε4)
@@ -191,22 +191,22 @@ end
 
 
 
-function EmaxGroup2Index(age, educ, sl, x3, x4, type)
+function EmaxGroup2Index(age, educ, LastChoice, x3, x4, type)
 
-    typeCount      = 4
-    ageStateCount  = 49
-    educStateCount = 23
-    slStateCount   = 2
-    x3StateCount   = 31
-    x4StateCount   = 31
+    typeCount              = 4
+    ageStateCount          = 49
+    educStateCount         = 23
+    LastChoiceStateCount   = 4
+    x3StateCount           = 31
+    x4StateCount           = 31
 
     enumerator = (
         (x4+1) +
-        (x3)* x4StateCount +
-        (sl)* x4StateCount* x3StateCount +
-        (educ)* x4StateCount* x3StateCount* slStateCount +
-        (age-17) * x4StateCount* x3StateCount* slStateCount* educStateCount +
-        (type-1) * x4StateCount* x3StateCount* slStateCount* educStateCount * ageStateCount
+        (x3)*           x4StateCount +
+        (LastChoice-1)* x4StateCount* x3StateCount +
+        (educ)*         x4StateCount* x3StateCount* LastChoiceStateCount +
+        (age-17)*       x4StateCount* x3StateCount* LastChoiceStateCount* educStateCount +
+        (type-1)*       x4StateCount* x3StateCount* LastChoiceStateCount* educStateCount * ageStateCount
     )
     return enumerator
 end
@@ -230,19 +230,19 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
     enum = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     stride = blockDim().x * gridDim().x
 
-    typeCount      = 4
-    ageStateCount  = 49
-    educStateCount = 23
-    slStateCount   = 2
-    x3StateCount   = 31
-    x4StateCount   = 31
+    typeCount              = 4
+    ageStateCount          = 49
+    educStateCount         = 23
+    LastChoiceStateCount   = 4
+    x3StateCount           = 31
+    x4StateCount           = 31
 
 
-    educ = div(enum-1, slStateCount*x3StateCount*x4StateCount*typeCount)
-    rem  = mod(enum-1, slStateCount*x3StateCount*x4StateCount*typeCount)
+    educ = div(enum-1, LastChoiceStateCount*x3StateCount*x4StateCount*typeCount)
+    rem  = mod(enum-1, LastChoiceStateCount*x3StateCount*x4StateCount*typeCount)
 
-    sl   = div(rem, x3StateCount*x4StateCount*typeCount)
-    rem  = mod(rem, x3StateCount*x4StateCount*typeCount)
+    LastChoice   = div(rem, x3StateCount*x4StateCount*typeCount) + 1
+    rem          = mod(rem, x3StateCount*x4StateCount*typeCount)
 
     x3   = div(rem, x4StateCount*typeCount)
     rem  = mod(rem, x4StateCount*typeCount)
@@ -252,17 +252,17 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
 
     type = rem + 1
 
-    EmaxIndex = EmaxGroup2Index(age, educ, sl, x3, x4, type)
+    EmaxIndex = EmaxGroup2Index(age, educ, LastChoice, x3, x4, type)
 
     if (educ + x3 + x4 + 5) > age
         return nothing
     end
 
-    if enum > (educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+    if enum > (educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount * typeCount)
         return nothing
     end
 
-    if EmaxIndex > (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+    if EmaxIndex > (ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount * typeCount)
         return nothing
     end
 
@@ -295,11 +295,11 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε2 = epssolve[2,row]
-                VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF2, VF3, VF4)
             end
@@ -310,9 +310,9 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF3, VF4)
             end
@@ -320,10 +320,10 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
         end
     else
 
-        enum1 = EmaxGroup2Index(age+1, educ, 0, x3, x4, type)
-        enum2 = EmaxGroup2Index(age+1, (educ+1*(educ!=22)), 1, x3, x4, type)
-        enum3 = EmaxGroup2Index(age+1, educ, 0, (x3+1*(x3!=x3Max)), x4, type)
-        enum4 = EmaxGroup2Index(age+1, educ, 0, x3, (x4+1*(x4!=x4Max)), type)
+        enum1 = EmaxGroup2Index(age+1, educ, 1, x3, x4, type)
+        enum2 = EmaxGroup2Index(age+1, (educ+1*(educ!=22)), 2, x3, x4, type)
+        enum3 = EmaxGroup2Index(age+1, educ, 3, (x3+1*(x3!=x3Max)), x4, type)
+        enum4 = EmaxGroup2Index(age+1, educ, 4, x3, (x4+1*(x4!=x4Max)), type)
 
         EmaxNext1 = Emax[enum1]
 
@@ -341,13 +341,13 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 VF1 = VF1 + δ * EmaxNext1
                 ε2 = epssolve[2,row]
-                VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 VF2 = VF2 + δ * EmaxNext2
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF2, VF3, VF4)
@@ -360,10 +360,10 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 VF1 = VF1 + δ * EmaxNext1
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF3, VF4)
@@ -374,7 +374,7 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
     end
 
 
-    if EmaxIndex <= (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount)
+    if EmaxIndex <= (ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount * typeCount)
         Emax[EmaxIndex] = value
     end
 
@@ -412,27 +412,27 @@ function solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
     State space size= 49*23*2*31*31=           2,166,094
     =#
 
-    ageState  = 65 :-1 :17   # age age of the individual
-    educState = 0 :1 :22     # educ number of completed education
-    slState   = [0,1]        # sl schooling status of last period
-    x3State   = 0 :1 : x3Max     # x3 experience in white-collar
-    x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
+    ageState  = 65 :-1 :17     # age age of the individual
+    educState = 0 :1 :22       # educ number of completed education
+    LastChoiceState   = 1:4    # LastChoice : alternative chosen in the last period
+    x3State   = 0 :1 : x3Max   # x3 experience in white-collar
+    x4State   = 0 :1 : x4Max   # x4 experience in blue-collar
 
     ageStateCount  = length(ageState)
     educStateCount = length(educState)
-    slStateCount   = length(slState)
+    LastChoiceStateCount   = length(LastChoiceState)
     x3StateCount   = length(x3State)
     x4StateCount   = length(x4State)
     typeCount      = 4
 
 
-    stateSpaceSize = ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount * typeCount
+    stateSpaceSize = ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount * typeCount
 
     Emax = CUDA.fill(1.0, (stateSpaceSize, 1))
     epssolve = CuArray(epssolve)
 
 
-    numblocks = ceil(Int, educStateCount*slStateCount*x3StateCount*x4StateCount*typeCount/256)
+    numblocks = ceil(Int, educStateCount*LastChoiceStateCount*x3StateCount*x4StateCount*typeCount/256)
 
 
     valueFunction = epssolve
@@ -567,24 +567,24 @@ conscription goup 2: obligated to attend conscription
 
 
 
-function EmaxGroup1Index(age, educ, sl, x3, x4, x5, type)
+function EmaxGroup1Index(age, educ, LastChoice, x3, x4, x5, type)
 
-    typeCount      = 4
-    ageStateCount  = 49
-    educStateCount = 23
-    slStateCount   = 2
-    x3StateCount   = 31
-    x4StateCount   = 31
-    x5StateCount   = 3
+    typeCount              = 4
+    ageStateCount          = 49
+    educStateCount         = 23
+    LastChoiceStateCount   = 5
+    x3StateCount           = 31
+    x4StateCount           = 31
+    x5StateCount           = 3
 
     enumerator = (
         (x5+1) +
-        (x4+1)   * x5StateCount +
-        (x3)     * x5StateCount* x4StateCount +
-        (sl)     * x5StateCount* x4StateCount* x3StateCount +
-        (educ)   * x5StateCount* x4StateCount* x3StateCount* slStateCount +
-        (age-17) * x5StateCount* x4StateCount* x3StateCount* slStateCount* educStateCount +
-        (type-1) * x5StateCount* x4StateCount* x3StateCount* slStateCount* educStateCount * ageStateCount
+        (x4+1)           * x5StateCount +
+        (x3)             * x5StateCount* x4StateCount +
+        (LastChoice-1)   * x5StateCount* x4StateCount* x3StateCount +
+        (educ)           * x5StateCount* x4StateCount* x3StateCount* LastChoiceStateCount +
+        (age-17)         * x5StateCount* x4StateCount* x3StateCount* LastChoiceStateCount* educStateCount +
+        (type-1)         * x5StateCount* x4StateCount* x3StateCount* LastChoiceStateCount* educStateCount * ageStateCount
     )
     return enumerator
 end
@@ -610,20 +610,20 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
     enum = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     stride = blockDim().x * gridDim().x
 
-    typeCount      = 4
-    ageStateCount  = 49
-    educStateCount = 23
-    slStateCount   = 2
-    x3StateCount   = 31
-    x4StateCount   = 31
-    x5StateCount   = 3
+    typeCount              = 4
+    ageStateCount          = 49
+    educStateCount         = 23
+    LastChoiceStateCount   = 5
+    x3StateCount           = 31
+    x4StateCount           = 31
+    x5StateCount           = 3
 
 
-    educ = div(enum-1, x5StateCount*slStateCount*x3StateCount*x4StateCount*typeCount)
-    rem  = mod(enum-1, x5StateCount*slStateCount*x3StateCount*x4StateCount*typeCount)
+    educ = div(enum-1, LastChoiceStateCount*x5StateCount*x3StateCount*x4StateCount*typeCount)
+    rem  = mod(enum-1, LastChoiceStateCount*x5StateCount*x3StateCount*x4StateCount*typeCount)
 
-    sl   = div(rem, x5StateCount*x3StateCount*x4StateCount*typeCount)
-    rem  = mod(rem, x5StateCount*x3StateCount*x4StateCount*typeCount)
+    LastChoice   = div(rem, x5StateCount*x3StateCount*x4StateCount*typeCount) + 1
+    rem          = mod(rem, x5StateCount*x3StateCount*x4StateCount*typeCount)
 
     x3   = div(rem, x5StateCount*x4StateCount*typeCount)
     rem  = mod(rem, x5StateCount*x4StateCount*typeCount)
@@ -636,17 +636,17 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
 
     type = rem + 1
 
-    EmaxIndex = EmaxGroup1Index(age, educ, sl, x3, x4, x5, type)
+    EmaxIndex = EmaxGroup1Index(age, educ, LastChoice, x3, x4, x5, type)
 
     if (educ + x3 + x4 + x5 + 5) > age
         return nothing
     end
 
-    if enum > (educStateCount* slStateCount* x3StateCount* x4StateCount* x5StateCount* typeCount)
+    if enum > (educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount* x5StateCount* typeCount)
         return nothing
     end
 
-    if EmaxIndex > (ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount* x5StateCount * typeCount)
+    if EmaxIndex > (ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount* x5StateCount * typeCount)
         return nothing
     end
 
@@ -678,11 +678,11 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε2 = epssolve[2,row]
-                VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF2, VF3, VF4)
             end
@@ -693,9 +693,9 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF3, VF4)
             end
@@ -704,11 +704,11 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
 
     else
 
-        enum1 = EmaxGroup1Index(age+1, educ, 0, x3, x4, x5, type)
-        enum2 = EmaxGroup1Index(age+1, (educ+1*(educ!=22)), 1, x3, x4, x5, type)
-        enum3 = EmaxGroup1Index(age+1, educ, 0, (x3+1*(x3!=x3Max)), x4, x5, type)
-        enum4 = EmaxGroup1Index(age+1, educ, 0, x3, (x4+1*(x4!=x4Max)), x5, type)
-        enum5 = EmaxGroup1Index(age+1, educ, 0, x3, x4, (x5+1*(x5!=2)), type)
+        enum1 = EmaxGroup1Index(age+1, educ, 1, x3, x4, x5, type)
+        enum2 = EmaxGroup1Index(age+1, (educ+1*(educ!=22)), 2, x3, x4, x5, type)
+        enum3 = EmaxGroup1Index(age+1, educ, 3, (x3+1*(x3!=x3Max)), x4, x5, type)
+        enum4 = EmaxGroup1Index(age+1, educ, 4, x3, (x4+1*(x4!=x4Max)), x5, type)
+        enum5 = EmaxGroup1Index(age+1, educ, 5, x3, x4, (x5+1*(x5!=2)), type)
 
         EmaxNext1 = Emax[enum1]
         EmaxNext2 = Emax[enum2]
@@ -727,13 +727,13 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                         VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                         VF1 = VF1 + δ * EmaxNext1
                         ε2 = epssolve[2,row]
-                        VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                        VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                         VF2 = VF2 + δ * EmaxNext2
                         ε3 = epssolve[3,row]
-                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                         VF3 = VF3 + δ * EmaxNext3
                         ε4 = epssolve[4,row]
-                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
                         VF4 = VF4 + δ * EmaxNext4
 
                         s += max(VF1, VF2, VF3, VF4)
@@ -746,10 +746,10 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                         VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                         VF1 = VF1 + δ * EmaxNext1
                         ε3 = epssolve[3,row]
-                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                         VF3 = VF3 + δ * EmaxNext3
                         ε4 = epssolve[4,row]
-                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
                         VF4 = VF4 + δ * EmaxNext4
 
                         s += max(VF1, VF3, VF4)
@@ -768,7 +768,7 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 value = s/MonteCarloCount
             elseif x5 == 0
                 if educ == 22
-                    if sl == 0
+                    if LastChoice != 2
                         s = 0.0
                         for row in 1:MonteCarloCount
                             ε5 = epssolve[5,row]
@@ -778,7 +778,7 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                             s += max(VF5)
                         end
                         value = s/MonteCarloCount
-                    elseif sl == 1
+                    elseif LastChoice == 2
                         s = 0.0
                         for row in 1:MonteCarloCount
                             ε1 = epssolve[1,row]
@@ -793,7 +793,7 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                         value = s/MonteCarloCount
                     end
                 else
-                    if     sl == 1
+                    if     LastChoice == 2
                         s = 0.0
                         for row in 1:MonteCarloCount
                             ε1 = epssolve[1,row]
@@ -804,12 +804,12 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                             VF5 = util5GPU(α50, α51, α52, educ, ε5)
                             VF5 = VF5 + δ * EmaxNext5
                             ε2 = epssolve[2,row]
-                            VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                            VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                             VF2 = VF2 + δ * EmaxNext2
                             s += max(VF1, VF2, VF5)
                         end
                         value = s/MonteCarloCount
-                    elseif sl == 0
+                    elseif LastChoice != 2
                         s = 0.0
                         for row in 1:MonteCarloCount
                             ε5 = epssolve[5,row]
@@ -830,13 +830,13 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 VF1 = VF1 + δ * EmaxNext1
                 ε2 = epssolve[2,row]
-                VF2 = util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
+                VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 VF2 = VF2 + δ * EmaxNext2
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF2, VF3, VF4)
@@ -879,30 +879,30 @@ function solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
     Stata space size= 49*23*2*31*31*3=         6,498,282
     =#
 
-    ageState  = 65 :-1 :17   # age age of the individual
-    educState = 0 :1 :22     # educ number of completed education
-    slState   = [0,1]        # sl schooling status of last period
-    x3State   = 0 :1 : x3Max     # x3 experience in white-collar
-    x4State   = 0 :1 : x4Max     # x4 experience in blue-collar
-    x5State   = [0,1,2]      # x5 indicate the years attending conscription
+    ageState  = 65 :-1 :17      # age age of the individual
+    educState = 0 :1 :22        # educ number of completed education
+    LastChoiceState   = 1:5     # LastChoice : alternative chosen in the last period
+    x3State   = 0 :1 : x3Max    # x3 experience in white-collar
+    x4State   = 0 :1 : x4Max    # x4 experience in blue-collar
+    x5State   = [0,1,2]         # x5 indicate the years attending conscription
 
 
-    ageStateCount  = size(ageState)[1]
-    educStateCount = size(educState)[1]
-    slStateCount   = size(slState)[1]
-    x3StateCount   = size(x3State)[1]
-    x4StateCount   = size(x4State)[1]
-    x5StateCount   = size(x5State)[1]
-    typeCount      = 4
+    ageStateCount        = size(ageState)[1]
+    educStateCount       = size(educState)[1]
+    LastChoiceStateCount = size(LastChoiceState)[1]
+    x3StateCount         = size(x3State)[1]
+    x4StateCount         = size(x4State)[1]
+    x5StateCount         = size(x5State)[1]
+    typeCount            = 4
 
 
-    stateSpaceSize = ageStateCount* educStateCount* slStateCount* x3StateCount* x4StateCount* x5StateCount * typeCount
+    stateSpaceSize = ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount* x5StateCount * typeCount
 
     Emax = CUDA.fill(1.0, (stateSpaceSize, 1))
     epssolve = CuArray(epssolve)
 
 
-    numblocks = ceil(Int, educStateCount*slStateCount*x3StateCount*x4StateCount*x5StateCount*typeCount/256)
+    numblocks = ceil(Int, educStateCount*LastChoiceStateCount*x3StateCount*x4StateCount*x5StateCount*typeCount/256)
 
 
 
@@ -1018,12 +1018,12 @@ function simulateGroup2(α10, α11, α12, α13,
                 x3=0
                 x4=0
                 educ=a[id]
-                sl= 1 #0+1*(educ==10)+1*(educ==8)
+                LastChoice= 2 #0+1*(educ==10)+1*(educ==8)
             else
-                x3  = convert(Int,sim[index-1,simCol["x3"]])
-                x4  = convert(Int,sim[index-1,simCol["x4"]])
-                educ= convert(Int,sim[index-1,simCol["educ"]])
-                sl  =1*(sim[index-1,simCol["choice"]] == 2)
+                x3   = convert(Int,sim[index-1,simCol["x3"]])
+                x4   = convert(Int,sim[index-1,simCol["x4"]])
+                educ = convert(Int,sim[index-1,simCol["educ"]])
+                LastChoice  = convert(Int,sim[index-1,simCol["choice"]])
             end
 
             #= four shocks to person i in age 'age': =#
@@ -1031,9 +1031,9 @@ function simulateGroup2(α10, α11, α12, α13,
 
             #= comtemporaneous utility from each decision : =#
             u1= util1GPU(α10, α11, α12, α13, age, educ, ε1)
-            u2= util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
-            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
-            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+            u2= util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
+            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
 
             ########################
             ########################
@@ -1048,16 +1048,16 @@ function simulateGroup2(α10, α11, α12, α13,
                 maxUtility = maximum(utility)
             else
 
-                enumerator = EmaxGroup2Index(age+1, educ, 0, x3, x4, type)
+                enumerator = EmaxGroup2Index(age+1, educ, 1, x3, x4, type)
                 u1= u1 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup2Index(age+1, (educ+1*(educ< 22)), 1, x3, x4, type)
+                enumerator = EmaxGroup2Index(age+1, (educ+1*(educ< 22)), 2, x3, x4, type)
                 u2= u2 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup2Index(age+1, educ, 0, (x3+1*(x3< x3Max)), x4, type)
+                enumerator = EmaxGroup2Index(age+1, educ, 3, (x3+1*(x3< x3Max)), x4, type)
                 u3= u3 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup2Index(age+1, educ, 0, x3, (x4+1*(x4< x4Max)), type)
+                enumerator = EmaxGroup2Index(age+1, educ, 4, x3, (x4+1*(x4< x4Max)), type)
                 u4= u4 +δ*Emax[enumerator]
 
                 if educ < 22
@@ -1181,13 +1181,13 @@ function simulateGroup1(α10, α11, α12, α13,
                 x3   = 0
                 x4   = 0
                 educ = a[id]
-                sl   = 1 #0+1*(educ==10)+1*(educ==8)
+                LastChoice   = 2 #0+1*(educ==10)+1*(educ==8)
                 x5   = 0
             else
                 x3   = convert(Int,sim[index-1,simCol["x3"]])
                 x4   = convert(Int,sim[index-1,simCol["x4"]])
                 educ = convert(Int,sim[index-1,simCol["educ"]])
-                sl   = 1*(sim[index-1,simCol["choice"]] == 2)
+                LastChoice  = convert(Int,sim[index-1,simCol["choice"]])
                 x5   = convert(Int, sim[index-1,simCol["x5"]])
             end
 
@@ -1196,9 +1196,9 @@ function simulateGroup1(α10, α11, α12, α13,
 
             #= comtemporaneous utility from each decision : =#
             u1= util1GPU(α10, α11, α12, α13, age, educ, ε1)
-            u2= util2GPU(α20, α21, tc1, tc2, sl, educ+1, ε2, age, α30study)
-            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, educ, ε3, α22, α23)
-            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, educ, ε4, α24, α25)
+            u2= util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
+            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
             u5= util5GPU(α50, α51, α52, educ, ε5)
 
             ########################
@@ -1215,19 +1215,19 @@ function simulateGroup1(α10, α11, α12, α13,
             else
 
 
-                enumerator = EmaxGroup1Index(age+1, educ, 0, x3, x4, x5, type)
+                enumerator = EmaxGroup1Index(age+1, educ, 1, x3, x4, x5, type)
                 u1= u1 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup1Index(age+1, (educ+1*(educ< 22)), 1, x3, x4, x5, type)
+                enumerator = EmaxGroup1Index(age+1, (educ+1*(educ< 22)), 2, x3, x4, x5, type)
                 u2= u2 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup1Index(age+1, educ, 0, (x3+1*(x3< x3Max)), x4, x5, type)
+                enumerator = EmaxGroup1Index(age+1, educ, 3, (x3+1*(x3< x3Max)), x4, x5, type)
                 u3= u3 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup1Index(age+1, educ, 0, x3, (x4+1*(x4< x4Max)), x5, type)
+                enumerator = EmaxGroup1Index(age+1, educ, 4, x3, (x4+1*(x4< x4Max)), x5, type)
                 u4= u4 +δ*Emax[enumerator]
 
-                enumerator = EmaxGroup1Index(age+1, educ, 0, x3, x4, x5+1*(x5!=2), type)
+                enumerator = EmaxGroup1Index(age+1, educ, 5, x3, x4, x5+1*(x5!=2), type)
                 u5= u5 +δ*Emax[enumerator]
 
 
@@ -1248,15 +1248,15 @@ function simulateGroup1(α10, α11, α12, α13,
                             utility= [-1e20, -1e20, -1e20, -1e20, u5]
                     elseif x5 == 0
                         if educ == 22
-                            if sl == 1
+                            if LastChoice == 2
                                 utility= [u1, -1e20, -1e20, -1e20, u5]
-                            elseif sl == 0
+                            elseif LastChoice != 2
                                 utility= [-1e20, -1e20, -1e20, -1e20, u5]
                             end
                         else
-                            if sl == 1
+                            if LastChoice == 2
                                 utility= [u1, u2, -1e20, -1e20, u5]
-                            elseif sl == 0
+                            elseif LastChoice != 2
                                 utility= [-1e20, -1e20, -1e20, -1e20, u5]
                             end
                         end#if educ
