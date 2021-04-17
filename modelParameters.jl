@@ -282,6 +282,10 @@ tc2 = log(4.691439603355582e7)     ;    # education >= 16?
 α37 = 0.0 ; # In white-collar occupation
 α47 = 0.0 ; # In bllue-collar occupation
 
+#= Not working in the same occupation in the previous period=#
+α38 = 0.0 ; # In white-collar occupation
+α48 = 0.0 ; # In bllue-collar occupation
+
 #**********************
 α50 = 14.882579733172172 # intercept in util5 (conscription)
 α51 = log(4.118803655369918e6) ;    # util5 coeff for if educ >= 12
@@ -318,8 +322,8 @@ tc2 = log(4.691439603355582e7)     ;    # education >= 16?
 Params=[ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13 ,
         ω2T1, ω2T2, ω2T3, ω2T4,
         α21, tc1T1, tc2, α22, α23, α25, α30study,
-        α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-            ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+        α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+            ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
         α50, α51, α52,
         σ1, σ2, σ3, σ4, σ34 ,σ5,
         πE1T1exp, πE1T2exp, πE1T3exp,

@@ -41,7 +41,6 @@
     to my ubuntu operating system.
 =#
 
-# include("/home/sabouri/thesis/code,version11_Parallel.jl")
 # scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/wageMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
 # scp sabouri@192.168.84.5:/home/sabouri/thesis/moments/data/choiceMoment.csv /home/ehsan/Dropbox/Labor/Codes/Moments/data/
 
@@ -157,18 +156,20 @@ end
 
 
 #= utility when choice is whitel-collar occupation =#
-function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+function util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
     util= (
     exp((α30+ α31*educ+ α32*x3+ α33*x4+ α34*(x3^2)+ α35*(x4^2))- (α36- α37*(educ>=16))*(x3==0)
+    - α38*(LastChoice != 3)
     + α22*(educ>=12)+ α23*(educ>=16) + ε3)
     + α3)
     return util
 end
 
 #= utility when choice is blue-collar occupation =#
-function util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+function util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
     util= (
     exp((α40+ α41*educ+ α42*x3+ α43*x4+ α44*(x3^2)+ α45*(x4^2))- (α46- α46*(educ>=16))*(x4==0)
+    - α48*(LastChoice != 4)
     + α24*(educ>=12)+ α25*(educ>=16)+ ε4)
     + α4)
     return util
@@ -217,8 +218,8 @@ end
 #= value function for type 2: Obligated to attent conscription =#
 function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ω2T1,ω2T2,ω2T3,ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                 δ,
                 epssolve,
                 age,
@@ -297,9 +298,9 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε2 = epssolve[2,row]
                 VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF2, VF3, VF4)
             end
@@ -310,9 +311,9 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF3, VF4)
             end
@@ -344,10 +345,10 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 VF2 = VF2 + δ * EmaxNext2
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF2, VF3, VF4)
@@ -360,10 +361,10 @@ function valueFunctionGroup2!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 VF1 = VF1 + δ * EmaxNext1
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF3, VF4)
@@ -391,8 +392,8 @@ end
 #= solve Emax for conscription group 2: Not obligated to attent conscription =#
 function solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
             ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
             δ,
             epssolve)
 
@@ -443,8 +444,8 @@ function solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
 
         @cuda threads=256 blocks=numblocks valueFunctionGroup2!(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
                                                             ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2,  α22, α23, α24, α25, α30study,
-                                                            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                                                            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                                                            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                                                            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                                                             δ,
                                                             epssolve,
                                                             age,
@@ -484,8 +485,8 @@ for i in 1:3
 
     EmaxGroup2GPU = solveGroup2AllType(14.0,14.0,14.0,14.0, α11, α12, α13,
                     14.0,14.0,14.0,14.0, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                    α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0,
-                    α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0,
+                    α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0, 0,
+                    α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0, 0,
                     0.92,
                     epssolve) ;
 
@@ -496,8 +497,8 @@ end
 
 # @code_warntype solveGroup2AllType(14.0,14.0,14.0,14.0, α11, α12, α13,
 #                 14.0,14.0,14.0,14.0, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-#                 α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0,
-#                 α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0,
+#                 α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0, 0,
+#                 α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0, 0,
 #                 0.92,
 #                 epssolve) ;
 
@@ -597,8 +598,8 @@ end
 #= value function for conscription goup 2: obligated to attend conscription =#
 function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                             ω2T1,ω2T2,ω2T3,ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                            α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                            α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                            α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                            α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                             α50, α51, α52,
                             δ,
                             epssolve,
@@ -680,9 +681,9 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε2 = epssolve[2,row]
                 VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF2, VF3, VF4)
             end
@@ -693,9 +694,9 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 ε1 = epssolve[1,row]
                 VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
 
                 s += max(VF1, VF3, VF4)
             end
@@ -730,10 +731,10 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                         VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                         VF2 = VF2 + δ * EmaxNext2
                         ε3 = epssolve[3,row]
-                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                         VF3 = VF3 + δ * EmaxNext3
                         ε4 = epssolve[4,row]
-                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
                         VF4 = VF4 + δ * EmaxNext4
 
                         s += max(VF1, VF2, VF3, VF4)
@@ -746,10 +747,10 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                         VF1 = util1GPU(α10, α11, α12, α13, age, educ, ε1)
                         VF1 = VF1 + δ * EmaxNext1
                         ε3 = epssolve[3,row]
-                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                        VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                         VF3 = VF3 + δ * EmaxNext3
                         ε4 = epssolve[4,row]
-                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                        VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
                         VF4 = VF4 + δ * EmaxNext4
 
                         s += max(VF1, VF3, VF4)
@@ -833,10 +834,10 @@ function valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                 VF2 = util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
                 VF2 = VF2 + δ * EmaxNext2
                 ε3 = epssolve[3,row]
-                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
+                VF3 = util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
                 VF3 = VF3 + δ * EmaxNext3
                 ε4 = epssolve[4,row]
-                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+                VF4 = util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
                 VF4 = VF4 + δ * EmaxNext4
 
                 s += max(VF1, VF2, VF3, VF4)
@@ -856,8 +857,8 @@ end
 #= Solve Emax for conscription goup 1: obligated to attent conscription =#
 function solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
             ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+            α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+            α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
             α50, α51, α52,
             δ,
             epssolve)
@@ -910,8 +911,8 @@ function solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
 
         @cuda threads=256 blocks=numblocks valueFunctionGroup1!(ω1T1,ω1T2,ω1T3,ω1T4, α11, α12, α13,
                                                             ω2T1,ω2T2,ω2T3,ω2T4, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                                                            α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                                                            α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                                                            α3, ω3T1,ω3T2,ω3T3,ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                                                            α4, ω4T1,ω4T2,ω4T3,ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                                                             α50, α51, α52,
                                                             δ,
                                                             epssolve,
@@ -948,8 +949,8 @@ for i in 1:3
 
     EmaxGroup1= solveGroup1AllType(14.0,14.0,14.0,14.0, α11, α12, α13,
                 14.0,14.0,14.0,14.0, α21, tc1T1, tc2, α22, α23, 0, α25, α30study,
-                α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0,
-                α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0,
+                α3, 14.0,14.0,14.0,14.0, α31, α32, α33, α34, α35, 0, 0, 0,
+                α4, 14.0,14.0,14.0,14.0, α41, α42, α43, α44, α45, 0, 0, 0,
                 α50, α51, α52,
                 0.92,
                 epssolveGroup1) ;
@@ -966,8 +967,8 @@ end
 
 function simulateGroup2(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                    α3, α30, α31, α32, α33, α34, α35, α36, α37,
-                    α4, α40, α41, α42, α43, α44, α45, α46, α47,
+                    α3, α30, α31, α32, α33, α34, α35, α36, α37, α38,
+                    α4, α40, α41, α42, α43, α44, α45, α46, α47, α48,
                     α50, α51, α52, δ,
                     σ1, σ2, σ3, σ4, σ34 ,σ5,
                     N, Emax, weights, Seed, type)
@@ -1032,8 +1033,8 @@ function simulateGroup2(α10, α11, α12, α13,
             #= comtemporaneous utility from each decision : =#
             u1= util1GPU(α10, α11, α12, α13, age, educ, ε1)
             u2= util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
-            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
-            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
+            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
 
             ########################
             ########################
@@ -1130,8 +1131,8 @@ end#simulate-1e20
 
 function simulateGroup1(α10, α11, α12, α13,
                     α20, α21, tc1, tc2, α22, α23, α24, α25, α30study,
-                    α3, α30, α31, α32, α33, α34, α35, α36, α37,
-                    α4, α40, α41, α42, α43, α44, α45, α46, α47,
+                    α3, α30, α31, α32, α33, α34, α35, α36, α37, α38,
+                    α4, α40, α41, α42, α43, α44, α45, α46, α47, α48,
                     α50, α51, α52, δ,
                     σ1, σ2, σ3, σ4, σ34 ,σ5,
                     N, Emax, weights, Seed, type)
@@ -1197,8 +1198,8 @@ function simulateGroup1(α10, α11, α12, α13,
             #= comtemporaneous utility from each decision : =#
             u1= util1GPU(α10, α11, α12, α13, age, educ, ε1)
             u2= util2GPU(α20, α21, tc1, tc2, LastChoice, educ+1, ε2, age, α30study)
-            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, x3, x4, LastChoice, educ, ε3, α22, α23)
-            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, x3, x4, LastChoice, educ, ε4, α24, α25)
+            u3= util3GPU(α3, α30, α31, α32, α33, α34, α35, α36, α37, α38, x3, x4, LastChoice, educ, ε3, α22, α23)
+            u4= util4GPU(α4, α40, α41, α42, α43, α44, α45, α46, α47, α48, x3, x4, LastChoice, educ, ε4, α24, α25)
             u5= util5GPU(α50, α51, α52, educ, ε5)
 
             ########################
@@ -1712,8 +1713,8 @@ function estimation(params,
     ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
     ω2T1, ω2T2, ω2T3, ω2T4,
     α21, tc1T1, tc2, α22, α23, α25, α30study,
-    α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-        ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α37,
+    α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+        ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
     α50, α51, α52,
     σ1, σ2, σ3, σ4, σ34 ,σ5,
     πE1T1exp, πE1T2exp, πE1T3exp,
@@ -1895,8 +1896,8 @@ function estimation(params,
 
     EmaxGroup2AllType = solveGroup2AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
                 ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                 δ,
                 epssolveGroup2)
 
@@ -1962,8 +1963,8 @@ function estimation(params,
 
     EmaxGroup1AllType =  solveGroup1AllType(ω1T1, ω1T2, ω1T3, ω1T4, α11, α12, α13,
                 ω2T1, ω2T2, ω2T3, ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                α3, ω3T1, ω3T2, ω3T3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                α4, ω4T1, ω4T2, ω4T3, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                 α50, α51, α52,
                 δ,
                 epssolveGroup1) ;
@@ -2033,8 +2034,8 @@ function estimation(params,
     if NGroup2T1 > 0
         simGroup2T1= simulateGroup2(ω1T1, α11, α12, α13,
                                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T1, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T1, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T1, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T1, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T1, EmaxGroup2AllType, weightsT1, 1111, 1)
@@ -2053,8 +2054,8 @@ function estimation(params,
     if NGroup2T2 > 0
         simGroup2T2= simulateGroup2(ω1T2, α11, α12, α13,
                                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T2, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T2, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T2, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T2, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T2, EmaxGroup2AllType, weightsT2, 2222, 2)
@@ -2073,8 +2074,8 @@ function estimation(params,
     if NGroup2T3 > 0
         simGroup2T3= simulateGroup2(ω1T3, α11, α12, α13,
                                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T3, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T3, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T3, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T3, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T3, EmaxGroup2AllType, weightsT3, 1345, 3)
@@ -2094,8 +2095,8 @@ function estimation(params,
     if NGroup2T4 > 0
         simGroup2T4= simulateGroup2(ω1T4, α11, α12, α13,
                                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup2T4, EmaxGroup2AllType, weightsT4, 5432, 4)
@@ -2111,8 +2112,8 @@ function estimation(params,
     if NGroup1T1 > 0
         simGroup1T1= simulateGroup1(ω1T1, α11, α12, α13,
                                 ω2T1, α21, tc1T1, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T1, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T1, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T1, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T1, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T1, EmaxGroup1AllType, weightsT1, 3333, 1)
@@ -2124,8 +2125,8 @@ function estimation(params,
     if NGroup1T2 > 0
         simGroup1T2= simulateGroup1(ω1T2, α11, α12, α13,
                                 ω2T2, α21, tc1T2, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T2, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T2, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T2, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T2, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T2, EmaxGroup1AllType, weightsT2, 4444, 2)
@@ -2138,8 +2139,8 @@ function estimation(params,
     if NGroup1T3 > 0
         simGroup1T3= simulateGroup1(ω1T3, α11, α12, α13,
                                 ω2T3, α21, tc1T3, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T3, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T3, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T3, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T3, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T3, EmaxGroup1AllType, weightsT3, 5234, 3)
@@ -2152,8 +2153,8 @@ function estimation(params,
     if NGroup1T4 > 0
         simGroup1T4= simulateGroup1(ω1T4, α11, α12, α13,
                                 ω2T4, α21, tc1T4, tc2, α22, α23, α24, α25, α30study,
-                                α3, ω3T4, α31, α32, α33, α34, α35, α36, α37,
-                                α4, ω4T4, α41, α42, α43, α44, α45, α46, α47,
+                                α3, ω3T4, α31, α32, α33, α34, α35, α36, α37, α38,
+                                α4, ω4T4, α41, α42, α43, α44, α45, α46, α47, α48,
                                 α50, α51, α52, δ,
                                 σ1, σ2, σ3, σ4, σ34 ,σ5,
                                 NGroup1T4, EmaxGroup1AllType, weightsT4, 7764, 4)
