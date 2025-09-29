@@ -1,0 +1,22 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{8}{c}}
+\hline\hline
+            &\multicolumn{2}{c}{\shortstack{Age 24-26}} &\multicolumn{2}{c}{\shortstack{Age 27-29}} &\multicolumn{2}{c}{\shortstack{Age 30-32}} &\multicolumn{2}{c}{\shortstack{Age 33-35}} \\\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+            &\multicolumn{1}{c}{(1)}         &\multicolumn{1}{c}{(2)}         &\multicolumn{1}{c}{(3)}         &\multicolumn{1}{c}{(4)}         &\multicolumn{1}{c}{(5)}         &\multicolumn{1}{c}{(6)}         &\multicolumn{1}{c}{(7)}         &\multicolumn{1}{c}{(8)}         \\
+\hline
+netincome\_w\_y&                     &                     &                     &                     &                     &                     &                     &                     \\
+Conscription * Male&       -0.00         &       -0.02         &        0.09\sym{*}  &        0.04         &        0.07         &        0.04         &        0.14\sym{**} &        0.08         \\
+            &      (0.06)         &      (0.08)         &      (0.05)         &      (0.05)         &      (0.05)         &      (0.04)         &      (0.06)         &      (0.05)         \\
+year fixed effect &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         \\
+gender FE   &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         \\
+cohort FE   &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         &           Y         \\
+rural dummy &                     &           Y         &                     &           Y         &                     &           Y         &                     &           Y         \\
+province FE &                     &           Y         &                     &           Y         &                     &           Y         &                     &           Y         \\
+\hline
+Implied effect (\%)&       -0.03         &       -1.59         &        9.64         &        4.48         &        7.71         &        3.83         &       14.86         &        8.65         \\
+SE (percentage effect)&    (  5.69)         &    (  7.60)         &    (  5.51)         &    (  5.52)         &    (  5.09)         &    (  4.20)         &    (  6.66)         &    (  5.68)         \\
+Observations&       15630         &       15630         &       18883         &       18883         &       21223         &       21223         &       14623         &       14623         \\
+\hline\hline
+\end{tabular}
+}

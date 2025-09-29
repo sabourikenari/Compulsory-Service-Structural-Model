@@ -3,6 +3,19 @@
 * load HEIS data
 use "C:\Users\ehsa7798\Documents\all_ind.dta", clear
 
+** variable definitions
+* define birth cohort
+gen birth_y = year - age
+replace birth_y = birth_y + 1921
+
+* define male dummy
+gen male = (gender==1)
+replace male=. if mi(gender)
+
+// 	replace netincome_w_y = netincome_w_y + income_s_y if !mi(income_s_y)
+replace netincome_w_y = 0 if netincome_w_y<0
+replace netincome_w_y = netincome_w_y/cpi_y
+
 
 * ----------------------------------------------------------------------
 ** graphical evidence on exemption reform and education
@@ -66,42 +79,193 @@ restore
 
 
 * ----------------------------------------------------------------------
-matrix result = J(20,3,0)
+matrix result = J(30,3,0)
 preserve
-
-    * define birth cohort
-    gen birth_y = year - age
-    replace birth_y = birth_y + 1921
-
-    * define male dummy
-    gen male = (gender==1)
-    replace male=. if mi(gender)
 
     * define exposure cohorts 
     gen cohorts = . 
     replace cohorts = 0 if inlist(birth_y,1979,1980,1981,1982)
     replace cohorts = 1 if inrange(birth_y,1985,1990)
-    // replace cohorts = 1 if inlist(birth_y,1976,1975,1974)
     keep if !mi(cohorts)
-	
-// 	replace netincome_w_y = netincome_w_y + income_s_y if !mi(income_s_y)
-    replace netincome_w_y = 0 if netincome_w_y<0
-    replace netincome_w_y = netincome_w_y/cpi_y
 
-    local enum = 1
-    forvalues ageRestriction = 24(3)34 {
-
-        poisson netincome_w_y i.cohorts##i.male if inrange(age, `ageRestriction', `ageRestriction'+2) [iweight=weight] , vce(robust)
-		// matlist e(b)'
-
-        nlcom (percentage_change: (exp(_b[1.cohorts#1.male])-1))
-		// matlist r(V)'
-        matrix result[`enum',1] = r(b)
-        matrix result[`enum',2] = r(V)
+    eststo clear
+	local enum = 1
+	forvalues ageRestriction = 24(3)34 {
         
-        matrix result[`enum',3] = `ageRestriction'
-        local enum = `enum' + 1
+    poisson netincome_w_y i.cohorts##i.male i.year ///
+        if inrange(age, `ageRestriction', `ageRestriction'+2) ///
+        [iweight=weight], vce(cluster birth_y)
+    
+    * store regression
+    eststo age`ageRestriction', title("`ageRestriction'-`= `ageRestriction' + 2'")
+    
+    * run nlcom for percentage effect
+    quietly nlcom (pct_effect: (exp(_b[1.cohorts#1.male]) - 1)*100)
+    
+    local peff : display %6.2f r(b)[1,1]
+    local pse  : display %6.2f sqrt(r(V)[1,1])
+    
+    * add coefficient normally
+    estadd scalar pct_eff = r(b)[1,1]
+    
+    * add SE as a string with parentheses
+    estadd local pct_se_str = "(" + "`pse'" + ")"
+
+    matrix result[`enum',1] = r(b)[1,1]
+    matrix result[`enum',2] = r(V)[1,1]
+    
+    matrix result[`enum',3] = `ageRestriction'
+    local enum = `enum' + 1
+	
+    ** with additional controls
+	
+	poisson netincome_w_y i.cohorts##i.male i.year i.urban i.province ///
+        if inrange(age, `ageRestriction', `ageRestriction'+2) ///
+        [iweight=weight], vce(cluster birth_y)
+    
+    * store regression
+    eststo age2`ageRestriction', title("`ageRestriction'-`= `ageRestriction' + 2'")
+    
+    * run nlcom for percentage effect
+    quietly nlcom (pct_effect: (exp(_b[1.cohorts#1.male]) - 1)*100)
+    
+    local peff : display %6.2f r(b)[1,1]
+    local pse  : display %6.2f sqrt(r(V)[1,1])
+    
+    * add coefficient normally
+    estadd scalar pct_eff = r(b)[1,1]
+    
+    * add SE as a string with parentheses
+    estadd local pct_se_str = "(" + "`pse'" + ")"
+	
+	
     }
+
+
+    esttab age* using "./results/empirical/D1_1_table_poisson_main.tex", replace ///
+        keep(1.cohorts#1.male) varlabels(1.cohorts#1.male "Conscription * Male") ///
+        b(2) se(2) star(* 0.10 ** 0.05 *** 0.01) ///
+        stats(pct_eff pct_se_str N, ///
+            fmt(2 s 0) ///
+            labels("Implied effect (\%)" "SE (percentage effect)" "Observations")) ///
+        indicate("year fixed effect = *.year" ///
+                "gender FE = 1.male" ///
+                "cohort FE = 1.cohorts" "rural dummy = 1.urban" "province FE = *.province", labels("Y")) ///
+		mgroups("\shortstack{Age 24-26}" "\shortstack{Age 27-29}" "\shortstack{Age 30-32}" "\shortstack{Age 33-35}", ///
+		pattern(1 0 1 0 1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
+        nomtitles nonotes
+
+restore
+
+
+
+capture frame drop result
+frame create result
+frame change result 
+
+    svmat result
+    rename result1 coef
+    rename result2 se
+    rename result3 age
+
+    drop if age==0
+
+    gen ub = coef + 1.96* sqrt(se)
+    gen lb = coef - 1.96* sqrt(se)
+
+    graph twoway bar coef age, legend(label(1 "coefficient")) barw(1.5) bfcolor(navy%20) bcolor(navy) lwidth(thick) ///
+        || rcap ub lb age,  legend(label(2 "95% CI")) color(black%80) lwidth(medthick) ///
+        ytitle("Coefficient") xtitle("age") yline(0, lcolor(khaki) lwidth(thick) lpattern(dash) ) ///
+        legend(order(1 2) pos(11) ring(0) col(2)) ///
+        graphregion(color(white)) name("inc", replace) ///
+        ylabel(-20(5)5)
+    //     xlabel(25(3)30) ///
+
+    gen type = "data"
+    save "./data/temp/data_result.dta", replace
+
+frame change default
+
+
+
+* ----------------------------------------------------------------------
+* robustness for parallel trends assumption
+matrix result = J(30,3,0)
+preserve
+
+    * define exposure cohorts 
+    gen cohorts = . 
+    replace cohorts = 0 if inrange(birth_y,1985,1990)
+    replace cohorts = 1 if inrange(birth_y,1971-5,1971)
+    keep if !mi(cohorts)
+
+    eststo clear
+	
+    local enum = 1
+	forvalues ageRestriction = 24(3)34 {
+        
+    poisson netincome_w_y i.cohorts##i.male i.year ///
+        if inrange(age, `ageRestriction', `ageRestriction'+2) ///
+        [iweight=weight], vce(cluster birth_y)
+    
+    * store regression
+    eststo age`ageRestriction', title("`ageRestriction'-`= `ageRestriction' + 2'")
+    
+    * run nlcom for percentage effect
+    quietly nlcom (pct_effect: (exp(_b[1.cohorts#1.male]) - 1)*100)
+    
+    local peff : display %6.2f r(b)[1,1]
+    local pse  : display %6.2f sqrt(r(V)[1,1])
+    
+    * add coefficient normally
+    estadd scalar pct_eff = r(b)[1,1]
+    
+    * add SE as a string with parentheses
+    estadd local pct_se_str = "(" + "`pse'" + ")"
+
+    matrix result[`enum',1] = r(b)[1,1]
+    matrix result[`enum',2] = r(V)[1,1]
+    
+    matrix result[`enum',3] = `ageRestriction'
+    local enum = `enum' + 1
+	
+    ** with additional controls
+	
+	poisson netincome_w_y i.cohorts##i.male i.year i.urban i.province ///
+        if inrange(age, `ageRestriction', `ageRestriction'+2) ///
+        [iweight=weight], vce(cluster birth_y)
+    
+    * store regression
+    eststo age2`ageRestriction', title("`ageRestriction'-`= `ageRestriction' + 2'")
+    
+    * run nlcom for percentage effect
+    quietly nlcom (pct_effect: (exp(_b[1.cohorts#1.male]) - 1)*100)
+    
+    local peff : display %6.2f r(b)[1,1]
+    local pse  : display %6.2f sqrt(r(V)[1,1])
+    
+    * add coefficient normally
+    estadd scalar pct_eff = r(b)[1,1]
+    
+    * add SE as a string with parentheses
+    estadd local pct_se_str = "(" + "`pse'" + ")"
+	
+	
+    }
+
+
+    esttab age* using "./results/empirical/D1_1_table_poisson_placebo.tex", replace ///
+        keep(1.cohorts#1.male) varlabels(1.cohorts#1.male "Conscription * Male") ///
+        b(2) se(2) star(* 0.10 ** 0.05 *** 0.01) ///
+        stats(pct_eff pct_se_str N, ///
+            fmt(2 s 0) ///
+            labels("Implied effect (\%)" "SE (percentage effect)" "Observations")) ///
+        indicate("year fixed effect = *.year" ///
+                "gender FE = 1.male" ///
+                "cohort FE = 1.cohorts" "rural dummy = 1.urban" "province FE = *.province", labels("Y")) ///
+		mgroups("\shortstack{Age 24-26}" "\shortstack{Age 27-29}" "\shortstack{Age 30-32}" "\shortstack{Age 33-35}", ///
+		pattern(1 0 1 0 1 0 1 0) prefix(\multicolumn{@span}{c}{) suffix(}) span erepeat(\cmidrule(lr){@span})) ///
+        nomtitles nonotes
 
 restore
 
@@ -110,34 +274,29 @@ capture frame drop result
 frame create result
 frame change result 
 
-svmat result
-rename result1 coef
-rename result2 se
-rename result3 age
+    svmat result
+    rename result1 coef
+    rename result2 se
+    rename result3 age
 
-drop if age==0
+    drop if age==0
 
-gen ub = coef + 1.96* sqrt(se)
-gen lb = coef - 1.96* sqrt(se)
+    gen ub = coef + 1.96* sqrt(se)
+    gen lb = coef - 1.96* sqrt(se)
 
-
-graph twoway bar coef age, legend(label(1 "coefficient")) barw(1.5) bfcolor(navy%20) bcolor(navy) lwidth(thick) ///
-    || rcap ub lb age,  legend(label(2 "95% CI")) color(black%80) lwidth(medthick) ///
-    ytitle("Coefficient") xtitle("age") yline(0, lcolor(khaki) lwidth(thick) lpattern(dash) ) ///
-    legend(order(1 2) pos(11) ring(0) col(2)) ///
-    graphregion(color(white)) name("inc", replace) ///
-	ylabel(-0.2(0.05)0.05)
-//     xlabel(25(3)30) ///
-
-gen type = "data"
-save "./data/temp/data_result.dta",replace
-
+    graph twoway bar coef age, legend(label(1 "coefficient")) barw(1.5) bfcolor(navy%20) bcolor(navy) lwidth(thick) ///
+        || rcap ub lb age,  legend(label(2 "95% CI")) color(black%80) lwidth(medthick) ///
+        ytitle("Coefficient") xtitle("age") yline(0, lcolor(khaki) lwidth(thick) lpattern(dash) ) ///
+        legend(order(1 2) pos(11) ring(0) col(2)) ///
+        graphregion(color(white)) name("inc", replace) ///
+        ylabel(-20(5)5)
+    //     xlabel(25(3)30) ///
 
 frame change default
 
 
 
-* ----------------------------------------------------------------------
+
 * ----------------------------------------------------------------------
 ** calculate estimates implied by the model
 
@@ -163,10 +322,11 @@ preserve
     local enum = 1
     forvalues ageRestriction = 24(3)40 {
 	
-        ppmlhdfe income main if inrange(age, `ageRestriction', `ageRestriction'+2) //, vce(robust)
+        // ppmlhdfe income main if inrange(age, `ageRestriction', `ageRestriction'+2) , vce(robust)
+        poisson income i.main if inrange(age, `ageRestriction', `ageRestriction'+2), vce(robust)
 		// matlist e(b)'
 
-        nlcom (percentage_change: (exp(_b[main])-1))
+        nlcom (percentage_change: (exp(_b[1.main])-1))
 		// matlist r(V)'
         matrix result[`enum',1] = r(b)
         matrix result[`enum',2] = r(V)
@@ -192,6 +352,8 @@ drop if age==0
 gen ub = coef + 1.96* sqrt(se)
 gen lb = coef - 1.96* sqrt(se)
 
+gen type = "model"
+save "./data/temp/model_result.dta",replace
 
 // graph twoway bar coef age, legend(label(1 "coefficient")) barw(1.5) bfcolor(navy%20) bcolor(navy) lwidth(thick) ///
 //     || rcap ub lb age,  legend(label(2 "95% CI")) color(black%80) lwidth(medthick) ///
@@ -201,8 +363,19 @@ gen lb = coef - 1.96* sqrt(se)
 // 	ylabel(-0.2(0.05)0.05)
 // //     xlabel(22(2)34) ///
 
+frame change default
 
-gen type = "model"
+
+
+* ----------------------------------------------------------------------
+** combine empirical and model estimates
+
+capture frame drop graph
+frame create graph
+frame change graph 
+
+use "./data/temp/model_result.dta", clear
+
 append using "./data/temp/data_result.dta"
 
 replace age = age + 0.53 if type=="model" & age<36
@@ -219,14 +392,13 @@ graph twoway bar coef age if type=="model", legend(label(1 "Model")) barw(1) bfc
     graphregion(color(white)) name("inc", replace) ///
 	ylabel(-25(5)10) ///
 	xlabel(24 "24-26" 27 "27-29" 30 "30-32" 33 "33-35" 36 "36-38" 39 "39-41")
-	
-// 	graph export "./Data analysis/Results/D1_1_Exemption_Reform_earnings.pdf", replace
 
 frame change default
 
+// 	graph export "./Data analysis/Results/D1_1_Exemption_Reform_earnings.pdf", replace
 
-erase "./data/temp/data_result.dta"
-
+// erase "./data/temp/data_result.dta"
+// earase "./data/temp/model_result.dta"
 
 
 
