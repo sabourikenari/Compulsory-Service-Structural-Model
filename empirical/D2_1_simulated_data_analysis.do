@@ -2,11 +2,7 @@
 * ----------------------------------------------------------------------
 * conscription and lifetime earnings
 
-* change working directory
-cd "C:\Users\ehsa7798\GoogleDrive\Projects\Labor\Codes"
-
-
-import delimited ".\simNew.csv", clear
+import delimited ".\data\simulation\simNew.csv", clear
 
 rename (v1-v12) (age education x3 x4 choice income educated x5 type Emax choice_next homeSinceSchool)
 
@@ -66,7 +62,7 @@ graph twoway bar coef type, legend(label(1 "Estimate")) barw(0.6) bfcolor(navy%2
     legend(order(2) pos(2) ring(0) col(3) size(medthin) ) ///
     graphregion(color(white)) name("lifetiemIncome", replace) ///
 	xlabel(1 "ATT" 2 "Type One" 3 "Type Two" 4 "Type Three") ///
-    ylabel(-10(2)2) xline(1.5, lcolor(gray) lpattern(dash)) ///
+    ylabel(-10(2)2) xline(1.5, lcolor(gray) lpattern(dash)) scheme(s2color)
 	
 	// graph export "./Data analysis/Results/D2_1_lifetime_income_change.pdf", replace
 
@@ -127,67 +123,64 @@ frame change default
 
 * ----------------------------------------------------------------------
 * ----------------------------------------------------------------------
-* conscription and education
-
-* change working directory
-cd "C:\Users\ehsa7798\GoogleDrive\Projects\Labor\Codes"
+* compare model and empirical estimate of the effect of conscription on study and occupational choice
 
 
-import delimited ".\simNew.csv", clear
+// import delimited ".\data\simulation\simNew.csv", clear
 
-rename (v1-v12) (age education x3 x4 choice income educated x5 type Emax choice_next homeSinceSchool)
+// rename (v1-v12) (age education x3 x4 choice income educated x5 type Emax choice_next homeSinceSchool)
 
-capture drop conscript
-gen conscript = 1
-replace conscript = 0 if mi(x5)
+// capture drop conscript
+// gen conscript = 1
+// replace conscript = 0 if mi(x5)
 
-gen id = floor((_n - 1) / 50) + 1
+// gen id = floor((_n - 1) / 50) + 1
 
-replace income = 0 if mi(income)
-gcollapse (sum) lifetime_income = income, by(id) fast merge
+// replace income = 0 if mi(income)
+// gcollapse (sum) lifetime_income = income, by(id) fast merge
 
-hashsort id age
+// hashsort id age
 
-gen study = (choice==2)
-preserve 
+// gen study = (choice==2)
+// preserve 
 
-	keep if inrange(age,20,23)
-	reg study conscript i.type i.age
+// 	keep if inrange(age,20,23)
+// 	reg study conscript i.type i.age
 
-restore
+// restore
 
-gen blue= (choice==4)
-preserve 
+// gen blue= (choice==4)
+// preserve 
 
-	keep if inrange(age,33,35)
-	reg blue conscript i.type
+// 	keep if inrange(age,33,35)
+// 	reg blue conscript i.type
 
-restore
+// restore
 
 
-* ----------------------------------------------------------------------
-import delimited ".\simNew.csv", clear
-save ".\simNew.dta", replace
-
-import delimited ".\NoConscription.csv", clear
-
-append using ".\simNew.dta", generate(main)
-erase ".\simNew.dta"
-
+// * ----------------------------------------------------------------------
 // import delimited ".\simNew.csv", clear
 // save ".\simNew.dta", replace
-// import delimited ".\simNew.csv", clear
-// keep if mi(v8)
+
+// import delimited ".\NoConscription.csv", clear
+
 // append using ".\simNew.dta", generate(main)
 // erase ".\simNew.dta"
 
-rename (v1-v12) (age education x3 x4 choice income educated x5 type Emax choice_next homeSinceSchool)
+// // import delimited ".\simNew.csv", clear
+// // save ".\simNew.dta", replace
+// // import delimited ".\simNew.csv", clear
+// // keep if mi(v8)
+// // append using ".\simNew.dta", generate(main)
+// // erase ".\simNew.dta"
 
-gen study = (choice==2)
-preserve 
+// rename (v1-v12) (age education x3 x4 choice income educated x5 type Emax choice_next homeSinceSchool)
 
-	keep if inrange(age,20,23)
-	sum study
-	reg study main
+// gen study = (choice==2)
+// preserve 
 
-restore
+// 	keep if inrange(age,20,23)
+// 	sum study
+// 	reg study main
+
+// restore
