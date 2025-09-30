@@ -164,44 +164,32 @@ std <- std %>%
   )
 
 
-# graph_name <- c("home"="home" 
-#                 ,"study"="study",
-#                 "white-collar"="white-collar"
-#                 ,"blue-collar"="blue-collar"
-#                 ,"conscription"="conscription")
+Choice <- LFS %>%
+  mutate(birth_y = birth_y+1921) %>% 
+  filter(age>=16&age<=63,
+         birth_y %in% c( 1985:1990) ) %>%
+  group_by(age,choice) %>%
+  summarize(n=sum(W3),sample=n()) %>%
+  group_by(age) %>%
+  mutate(total=sum(n),
+         sample=sum(sample),
+         percent=n/total*100,
+         choice = fct_reorder(as.factor(choice),-percent)) %>%
+  select(age, choice, percent, sample)
 
+Choice %>%
+  filter(age<=60) %>% 
+  ggplot(aes(age, percent, color=choice, shape=choice)) +
+  geom_point()+ geom_line()+ theme_bw()+ 
+  scale_x_continuous(breaks = seq(16,62,3))+
+  labs(title = "Choice shares of birth cohorts 1985-90 by age")
 
-ggplot()+ 
-  facet_wrap(~factor(choice, levels=c("blue-collar","study","white-collar","home","conscription"))
-             ,scales = "free",ncol = 5) +
-  geom_line(data = trans %>% mutate(transition=transition*100) %>% filter(age<=35,age>=19,choice==choice_next,type=="data") ,
-            mapping = aes(x=age,y=transition,linetype="data",color="data") ,size=1.4)+
-  
-  geom_line(data = trans %>% mutate(transition=transition*100) %>% filter(age<=35,age>=19,choice==choice_next,type=="model") ,
-            mapping = aes(x=age,y=transition,linetype="model",color="model") ,size=1.4)+
-  
-  geom_line(data=std %>% filter(age<=35,choice==choice_next,age>=19),
-            mapping = aes(x=age,y=trans_high,linetype="95% CI",color="95% CI"),size=0.2) +
-  
-  geom_line(data=std %>% filter(age<=35,choice==choice_next,age>=19),
-            mapping = aes(x=age,y=trans_low,linetype="95% CI",color="95% CI"),size=0.2) +
-  
-  scale_linetype_manual(name = "type",
-                        breaks = c("data", "model","95% CI"),
-                        values = c("data" = "solid", "model" = "twodash", "95% CI"="dashed")) +
-  scale_color_manual(name = "type",
-                     breaks = c("data", "model","95% CI"),
-                     values = c("data" = "blue", "model" = "darkgreen", "95% CI"="blue" )) +
-  theme(legend.position = "bottom", legend.box = "vertical")+
-  theme(strip.background =element_rect(colour="white",fill="white"))+
-  theme(strip.text = element_text(colour = 'black'),
-        panel.grid.major = element_blank() ) +
-  scale_x_continuous( breaks = seq(19,33,3) ,limits =c(18.5,32)) +
-  scale_y_continuous(limits = c(0,100)) + labs(x="age",y="transition rate")
+Choice <- Choice %>%
+  mutate(choice = paste0("from ", as.character(choice)))
 
-# ggsave("./Data analysis/Results/R1_1_fit_transition_rate_data.pdf",width = 12, height = 4)
-
-
+trans_with_share <- trans %>%
+  left_join(Choice %>% mutate(share = percent / 100), 
+            by = c("age", "choice"))
 
 # Prepare data
 trans_base <- trans %>%
@@ -212,15 +200,37 @@ trans_data  <- filter(trans_base, type == "data")
 trans_model <- filter(trans_base, type == "model")
 std_base    <- filter(std, age >= 19, age <= 35)
 
+
 # Plot
 ggplot(trans_base, aes(x = age, y = transition, color = type, linetype = type)) +
   facet_grid(choice_next ~ choice, scales = "fixed") +
   
-  geom_line(data = trans_data,  aes(color = "data",  linetype = "data"),  size = 0.8) +
-  geom_line(data = trans_model, aes(color = "model", linetype = "model"), size = 0.6) +
-  geom_line(data = std_base, aes(y = trans_high, color = "95% CI", linetype = "95% CI"), size = 0.2) +
-  geom_line(data = std_base, aes(y = trans_low,  color = "95% CI", linetype = "95% CI"), size = 0.2) +
+  # Data: line width depends on share
+  geom_line(
+    data = trans_data,
+    aes(color = "data", linetype = "data", size = share)
+  ) +
   
+  # Model: constant width
+  geom_line(
+    data = trans_model,
+    aes(color = "model", linetype = "model"),
+    size = 0.6
+  ) +
+  
+  # CI bands: keep constant width
+  geom_line(
+    data = std_base,
+    aes(y = trans_high, color = "95% CI", linetype = "95% CI"),
+    size = 0.2
+  ) +
+  geom_line(
+    data = std_base,
+    aes(y = trans_low,  color = "95% CI", linetype = "95% CI"),
+    size = 0.2
+  ) +
+  
+  # Scales
   scale_linetype_manual(
     name   = "type",
     breaks = c("data", "model", "95% CI"),
@@ -231,7 +241,12 @@ ggplot(trans_base, aes(x = age, y = transition, color = type, linetype = type)) 
     breaks = c("data", "model", "95% CI"),
     values = c("data" = "blue", "model" = "darkgreen", "95% CI" = "blue")
   ) +
+  scale_size(
+    range = c(0.2, 2),    # thickness range
+    guide = "none"        # hide legend for line width
+  ) +
   
+  # Theme
   theme_light() +
   theme(
     legend.position  = "bottom",
@@ -240,12 +255,53 @@ ggplot(trans_base, aes(x = age, y = transition, color = type, linetype = type)) 
     strip.text       = element_text(colour = "black"),
     panel.grid       = element_blank()
   ) +
+  
+  # Labels
   labs(y = "transition rate") +
   scale_x_continuous(breaks = seq(19, 33, 4))
 
-ggsave("./results/simulation-analysis/R1_1_fit_transition_rate_data_all2.pdf", width = 9,height = 8)
+# Save
+ggsave("./results/simulation-analysis/R1_1_fit_transition_rate_data_all2.pdf",
+       width = 9, height = 8)
 
 
+
+
+# graph_name <- c("home"="home" 
+#                 ,"study"="study",
+#                 "white-collar"="white-collar"
+#                 ,"blue-collar"="blue-collar"
+#                 ,"conscription"="conscription")
+
+
+# ggplot()+ 
+#   facet_wrap(~factor(choice, levels=c("blue-collar","study","white-collar","home","conscription"))
+#              ,scales = "free",ncol = 5) +
+#   geom_line(data = trans %>% mutate(transition=transition*100) %>% filter(age<=35,age>=19,choice==choice_next,type=="data") ,
+#             mapping = aes(x=age,y=transition,linetype="data",color="data") ,size=1.4)+
+  
+#   geom_line(data = trans %>% mutate(transition=transition*100) %>% filter(age<=35,age>=19,choice==choice_next,type=="model") ,
+#             mapping = aes(x=age,y=transition,linetype="model",color="model") ,size=1.4)+
+  
+#   geom_line(data=std %>% filter(age<=35,choice==choice_next,age>=19),
+#             mapping = aes(x=age,y=trans_high,linetype="95% CI",color="95% CI"),size=0.2) +
+  
+#   geom_line(data=std %>% filter(age<=35,choice==choice_next,age>=19),
+#             mapping = aes(x=age,y=trans_low,linetype="95% CI",color="95% CI"),size=0.2) +
+  
+#   scale_linetype_manual(name = "type",
+#                         breaks = c("data", "model","95% CI"),
+#                         values = c("data" = "solid", "model" = "twodash", "95% CI"="dashed")) +
+#   scale_color_manual(name = "type",
+#                      breaks = c("data", "model","95% CI"),
+#                      values = c("data" = "blue", "model" = "darkgreen", "95% CI"="blue" )) +
+#   theme(legend.position = "bottom", legend.box = "vertical")+
+#   theme(strip.background =element_rect(colour="white",fill="white"))+
+#   theme(strip.text = element_text(colour = 'black'),
+#         panel.grid.major = element_blank() ) +
+#   scale_x_continuous( breaks = seq(19,33,3) ,limits =c(18.5,32)) +
+#   scale_y_continuous(limits = c(0,100)) + labs(x="age",y="transition rate")
+# # ggsave("./Data analysis/Results/R1_1_fit_transition_rate_data.pdf",width = 12, height = 4)
 
 
 
