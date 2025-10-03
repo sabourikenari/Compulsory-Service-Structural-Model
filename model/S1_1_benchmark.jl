@@ -1,40 +1,14 @@
 
 #=***************************************************
 
-    The replication code for the follwoing research paper:
-
-     "
-        The Effect of Compulsory Military Service on Education and Income of Men in Iran;
-        A Structural Model Estimation
-     "
+    The replication code for "The Economic Cost of Compulsory Military Service"
 
     Authors:
-        Ehsan Sabouri Kenari
+        Ehsan Sabouri Kenari (ehsan.sabouri@iies.su.se)
         Mohammad Hoseini
 
-    Contact us at:
-        ehsan.sabouri@iies.su.se
 
 ****************************************************=#
-
-#=
-    Solving dynamic programming
-    Two main groups of individuals:
-    conscription group 2 : Not obligated to attend conscription
-         Alternatives: 4 mutually exclusive choices
-         choice 1 : stay home
-         choice 2 : study
-         choice 3 : white-collar occupation
-         choice 4 : blue-collar occupation
-
-    conscription group 1 : obligated to attend conscription
-         Alternatives: 5 mutually exclusive choices
-         choice 1 : stay home
-         choice 2 : study
-         choice 3 : white-collar occupation
-         choice 4 : blue-collar occupation
-         choice 5 : compulsory military service
-=#
 
 
 # include the required libraries 

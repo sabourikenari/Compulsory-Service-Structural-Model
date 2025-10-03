@@ -98,26 +98,13 @@ function valueFunctionGroup1!(p::NamedTuple,
     end
 
     if enum > (educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount* x5StateCount* typeCount* homeSinceSchoolCount)
-        # @cuprintln(EmaxIndex, "  aaa\n")
         return nothing
     end
-
-    # if EmaxIndex > (ageStateCount* educStateCount* LastChoiceStateCount* x3StateCount* x4StateCount* x5StateCount * typeCount*homeSinceSchoolCount)
-    #     @cuprintln(EmaxIndex, "  bbb\n")
-    #     return nothing
-    # end
-    #
-    # if EmaxIndex < 1
-    #     @cuprintln(EmaxIndex, "  ccc\n")
-    #     return nothing
-    # end
 
 
     #***********************************#
 
-    # MonteCarloCount = size(epssolve, 2)
-
-    value= -1 # this is for when no if conditon binds
+    value= -1 # this is for sanity check for a time when none of the if conditons binds
     if age == 65
         if educ < 22
             s = 0.0
@@ -203,6 +190,7 @@ function valueFunctionGroup1!(p::NamedTuple,
                     end
                     value = s/p.MonteCarloCount
                 end
+            
             # elseif x5 == 1
             #     s = 0.0
             #     for row in 1:p.MonteCarloCount
@@ -213,6 +201,7 @@ function valueFunctionGroup1!(p::NamedTuple,
             #         s += max(VF5)
             #     end
             #     value = s/p.MonteCarloCount
+            
             else#if x5 == 0
                 if educ == 22
                     if homeSinceSchool==p.homeSinceSchoolMax

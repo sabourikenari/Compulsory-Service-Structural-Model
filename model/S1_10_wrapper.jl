@@ -84,7 +84,7 @@ function estimation(params,
 
 
     #= discount factor set outside the estimation process =#
-    δ = 0.92 #0.7937395498108646 ;
+    δ = 0.92 ;
 
     M = 250
 
@@ -643,7 +643,7 @@ function estimation(params,
 
     #= return SMM error calculated =#
     print(" SMM error = ", round(result))
-    writedlm( "data/simulation/simNew2.csv",  sim, ',');
+    writedlm( "data/simulation/simNew.csv",  sim, ',');
     # print(" SMM error = ", round(result), " Best Result: ",round(bestResult[1]))
     # print(contributions)
 
