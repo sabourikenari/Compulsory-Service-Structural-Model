@@ -1,5 +1,5 @@
 
-#=***************************************************
+#= ----------------------------------------------------------
 
     The replication code for "The Economic Cost of Compulsory Military Service"
 
@@ -8,7 +8,7 @@
         Mohammad Hoseini
 
 
-****************************************************=#
+---------------------------------------------------------- =#
 
 
 # include the required libraries 
@@ -40,44 +40,8 @@ include("S1_10_wrapper.jl")
 
 
 
-
-
-################################################################################
-#=
-    Define a function to calculate the mean of the maximum over some vectors.
-=#
-# @everywhere function MeanMaximum(array)
-#     length_each_vector = size(array[1])[1]
-#     number_of_vector = size(array)[1]
-#
-#     s = 0.0
-#     @simd for row in 1:length_each_vector
-#         max = 0.0
-#         for vector in 1:number_of_vector
-#             if array[vector][row] > max
-#                 max = array[vector][row]
-#             end
-#         end
-#         s += max
-#     end
-#     value= s/length_each_vector
-#     return value
-# end
-
-
-
-
-
-
-################################################################################
+    # ----------------------------------------------------------
 #= Initiating the best result on the disk with a large number =#
-
-
-#= read data moment files =#
-
-# include("/home/sabouri/Dropbox/Labor/Codes/GitRepository/ThreeTypes/modelParameters.jl")
-# include("/content/drive/MyDrive/Projects/Labor/Codes/GitRepository/ThreeTypes/modelParameters.jl")
-
 
 
 # contributions = 1.0e50

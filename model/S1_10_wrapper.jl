@@ -643,7 +643,7 @@ function estimation(params,
 
     #= return SMM error calculated =#
     print(" SMM error = ", round(result))
-    writedlm( "data/simulation/simNew.csv",  sim, ',');
+    writedlm( "data/simulation/simNewTest.csv",  sim, ',');
     # print(" SMM error = ", round(result), " Best Result: ",round(bestResult[1]))
     # print(contributions)
 

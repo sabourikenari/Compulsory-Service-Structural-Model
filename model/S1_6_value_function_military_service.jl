@@ -105,6 +105,7 @@ function valueFunctionGroup1!(p::NamedTuple,
     #***********************************#
 
     value= -1 # this is for sanity check for a time when none of the if conditons binds
+    # ---------------- Terminal age ---------------- #
     if age == 65
         if educ < 22
             s = 0.0
@@ -136,8 +137,10 @@ function valueFunctionGroup1!(p::NamedTuple,
             value = s/p.MonteCarloCount
         end
 
+    # ---------------- Recursive ages ---------------- #
     else
 
+        # Next-state indices for each *choice taken this period*
         enum1 = EmaxGroup1Index(age+1, educ, 1, x3, x4, x5, type, homeSinceSchool + 1*(age>=19)*(homeSinceSchool<p.homeSinceSchoolMax) )
         enum2 = EmaxGroup1Index(age+1, (educ+1*(educ!=22)), 2, x3, x4, x5, type, homeSinceSchool)
         enum3 = EmaxGroup1Index(age+1, educ, 3, (x3+1*(x3!=p.x3Max)), x4, x5, type, homeSinceSchool)
@@ -153,113 +156,119 @@ function valueFunctionGroup1!(p::NamedTuple,
 
         #####
         if age > 18
-            if     x5 == 2
-                if educ < 22
+                        
+            # if     x5 == 2
+            if educ < 22
+                s = 0.0
+                for row in 1:p.MonteCarloCount
+                    ε1 = epssolve[1,row]
+                    VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
+                    VF1 = VF1 + p.δ * EmaxNext1
+                    ε2 = epssolve[2,row]
+                    VF2 = util2GPU(p, LastChoice, educ+1, ε2, age; type=type)
+                    VF2 = VF2 + p.δ * EmaxNext2
+                    ε3 = epssolve[3,row]
+                    VF3 = util3GPU(p, x3, x4, LastChoice, educ, ε3; type=type)
+                    VF3 = VF3 + p.δ * EmaxNext3
+                    ε4 = epssolve[4,row]
+                    VF4 = util4GPU(p, x3, x4, LastChoice, educ, ε4; type=type)
+                    VF4 = VF4 + p.δ * EmaxNext4
+
+                    s += max(VF1, VF2, VF3, VF4)
+                end
+                valueCompleted = s/p.MonteCarloCount
+            else
+                s = 0.0
+                for row in 1:p.MonteCarloCount
+                    ε1 = epssolve[1,row]
+                    VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
+                    VF1 = VF1 + p.δ * EmaxNext1
+                    ε3 = epssolve[3,row]
+                    VF3 = util3GPU(p, x3, x4, LastChoice, educ, ε3; type=type)
+                    VF3 = VF3 + p.δ * EmaxNext3
+                    ε4 = epssolve[4,row]
+                    VF4 = util4GPU(p, x3, x4, LastChoice, educ, ε4; type=type)
+                    VF4 = VF4 + p.δ * EmaxNext4
+
+                    s += max(VF1, VF3, VF4)
+                end
+                valueCompleted = s/p.MonteCarloCount
+            end
+            
+            
+            # elseif x5 == 0
+            if educ == 22
+                if homeSinceSchool==p.homeSinceSchoolMax
+                    s = 0.0
+                    for row in 1:p.MonteCarloCount
+                        ε5 = epssolve[5,row]
+                        VF5 = util5GPU(p, educ, ε5)
+                        VF5 = VF5 + p.δ * EmaxNext5
+
+                        s += max(VF5)
+                    end
+                    valueNotCompleted = s/p.MonteCarloCount
+                else
                     s = 0.0
                     for row in 1:p.MonteCarloCount
                         ε1 = epssolve[1,row]
                         VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
                         VF1 = VF1 + p.δ * EmaxNext1
+                        ε5 = epssolve[5,row]
+                        VF5 = util5GPU(p, educ, ε5)
+                        VF5 = VF5 + p.δ * EmaxNext5
+
+                        s += max(VF1, VF5)
+                    end
+                    valueNotCompleted = s/p.MonteCarloCount
+                end
+            else
+                if     homeSinceSchool<p.homeSinceSchoolMax
+                    s = 0.0
+                    for row in 1:p.MonteCarloCount
+                        ε1 = epssolve[1,row]
+                        VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
+                        VF1 = VF1 + p.δ * EmaxNext1
+                        ε5 = epssolve[5,row]
+                        VF5 = util5GPU(p, educ, ε5)
+                        VF5 = VF5 + p.δ * EmaxNext5
                         ε2 = epssolve[2,row]
                         VF2 = util2GPU(p, LastChoice, educ+1, ε2, age; type=type)
                         VF2 = VF2 + p.δ * EmaxNext2
-                        ε3 = epssolve[3,row]
-                        VF3 = util3GPU(p, x3, x4, LastChoice, educ, ε3; type=type)
-                        VF3 = VF3 + p.δ * EmaxNext3
-                        ε4 = epssolve[4,row]
-                        VF4 = util4GPU(p, x3, x4, LastChoice, educ, ε4; type=type)
-                        VF4 = VF4 + p.δ * EmaxNext4
-
-                        s += max(VF1, VF2, VF3, VF4)
+                        s += max(VF1, VF2, VF5)
                     end
-                    value = s/p.MonteCarloCount
+                    valueNotCompleted = s/p.MonteCarloCount
                 else
                     s = 0.0
                     for row in 1:p.MonteCarloCount
-                        ε1 = epssolve[1,row]
-                        VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
-                        VF1 = VF1 + p.δ * EmaxNext1
-                        ε3 = epssolve[3,row]
-                        VF3 = util3GPU(p, x3, x4, LastChoice, educ, ε3; type=type)
-                        VF3 = VF3 + p.δ * EmaxNext3
-                        ε4 = epssolve[4,row]
-                        VF4 = util4GPU(p, x3, x4, LastChoice, educ, ε4; type=type)
-                        VF4 = VF4 + p.δ * EmaxNext4
-
-                        s += max(VF1, VF3, VF4)
+                        ε5 = epssolve[5,row]
+                        VF5 = util5GPU(p, educ, ε5)
+                        VF5 = VF5 + p.δ * EmaxNext5
+                        ε2 = epssolve[2,row]
+                        VF2 = util2GPU(p, LastChoice, educ+1, ε2, age; type=type)
+                        VF2 = VF2 + p.δ * EmaxNext2
+                        s += max(VF5, VF2)
                     end
-                    value = s/p.MonteCarloCount
-                end
-            
-            # elseif x5 == 1
-            #     s = 0.0
-            #     for row in 1:p.MonteCarloCount
-            #         ε5 = epssolve[5,row]
-            #         VF5 = util5GPU(p, educ, ε5)
-            #         VF5 = VF5 + p.δ * EmaxNext5
-            #
-            #         s += max(VF5)
-            #     end
-            #     value = s/p.MonteCarloCount
-            
-            else#if x5 == 0
-                if educ == 22
-                    if homeSinceSchool==p.homeSinceSchoolMax
-                        s = 0.0
-                        for row in 1:p.MonteCarloCount
-                            ε5 = epssolve[5,row]
-                            VF5 = util5GPU(p, educ, ε5)
-                            VF5 = VF5 + p.δ * EmaxNext5
-
-                            s += max(VF5)
-                        end
-                        value = s/p.MonteCarloCount
-                    else
-                        s = 0.0
-                        for row in 1:p.MonteCarloCount
-                            ε1 = epssolve[1,row]
-                            VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
-                            VF1 = VF1 + p.δ * EmaxNext1
-                            ε5 = epssolve[5,row]
-                            VF5 = util5GPU(p, educ, ε5)
-                            VF5 = VF5 + p.δ * EmaxNext5
-
-                            s += max(VF1, VF5)
-                        end
-                        value = s/p.MonteCarloCount
-                    end
-                else
-                    if     homeSinceSchool<p.homeSinceSchoolMax
-                        s = 0.0
-                        for row in 1:p.MonteCarloCount
-                            ε1 = epssolve[1,row]
-                            VF1 = util1GPU(p, age, educ, LastChoice, ε1; type=type)
-                            VF1 = VF1 + p.δ * EmaxNext1
-                            ε5 = epssolve[5,row]
-                            VF5 = util5GPU(p, educ, ε5)
-                            VF5 = VF5 + p.δ * EmaxNext5
-                            ε2 = epssolve[2,row]
-                            VF2 = util2GPU(p, LastChoice, educ+1, ε2, age; type=type)
-                            VF2 = VF2 + p.δ * EmaxNext2
-                            s += max(VF1, VF2, VF5)
-                        end
-                        value = s/p.MonteCarloCount
-                    else
-                        s = 0.0
-                        for row in 1:p.MonteCarloCount
-                            ε5 = epssolve[5,row]
-                            VF5 = util5GPU(p, educ, ε5)
-                            VF5 = VF5 + p.δ * EmaxNext5
-                            ε2 = epssolve[2,row]
-                            VF2 = util2GPU(p, LastChoice, educ+1, ε2, age; type=type)
-                            VF2 = VF2 + p.δ * EmaxNext2
-                            s += max(VF5, VF2)
-                        end
-                        value = s/p.MonteCarloCount
-                    end
+                    valueNotCompleted = s/p.MonteCarloCount
                 end
             end
+        
+        
+            if x5==2
+                value = valueCompleted
+            
+            elseif x5==0 
+                value = valueNotCompleted
+            
+            elseif x5==1
+                probability_get_one_year = 0  
+                value = probability_get_one_year * valueCompleted + (1 - probability_get_one_year) *  valueNotCompleted
+            
+            end
 
+        
+
+        # age <= 18 → normal set without Military
         elseif age <= 18
             s = 0.0
             for row in 1:p.MonteCarloCount
