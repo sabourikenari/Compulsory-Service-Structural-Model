@@ -114,6 +114,10 @@ tc2 = log(5.768484020567006e7 * 1.96)     ;    # education >= 16?
 
 α30study = -log(1.4050382321279654e6)*1.18
 
+probability_get_one_year = 0
+
+
+
 Params=[
     ω1T1, ω1T2, ω1T3, α11, α12, α13, α14,
     ω2T1, ω2T2, ω2T3,
@@ -123,7 +127,7 @@ Params=[
     α50, α51, α52,
     σ1, σ2, σ3, σ4, σ34 ,σ5,
     πE1T1exp, πE1T2exp,
-    πE2T1exp, πE2T2exp
+    πE2T1exp, πE2T2exp, probability_get_one_year
 ];
 
 

@@ -261,8 +261,8 @@ function valueFunctionGroup1!(p::NamedTuple,
                 value = valueNotCompleted
             
             elseif x5==1
-                probability_get_one_year = 0  
-                value = probability_get_one_year * valueCompleted + (1 - probability_get_one_year) *  valueNotCompleted
+                # probability_get_one_year = 0  
+                value = p.probability_get_one_year * valueCompleted + (1 - p.probability_get_one_year) *  valueNotCompleted
             
             end
 
