@@ -1,7 +1,7 @@
 
 
-################################################################################
-#= simulate conscription goup 2 =#
+# ----------------------------------------------------------
+# simulate conscription goup 2 
 
 function simulateGroup1(p::NamedTuple, N, Emax, weights; Seed=1234, type=1)
 
@@ -22,7 +22,9 @@ function simulateGroup1(p::NamedTuple, N, Emax, weights; Seed=1234, type=1)
                0.0    0.0    p.σ34  p.σ4   0.0  ;
                0.0    0.0    0.0    0.0    p.σ5 ]
     epsestimation=rand(MersenneTwister(Seed),MvNormal(epsSolveMean, epsSolveσ) , 50*N)
-
+    
+    rand_number_seed = MersenneTwister(Seed)
+    
     for id in 1:N
 
         for age in 16:65
@@ -56,8 +58,7 @@ function simulateGroup1(p::NamedTuple, N, Emax, weights; Seed=1234, type=1)
             u4= util4GPU(p, x3, x4, LastChoice, educ, ε4; type=type)
             u5= util5GPU(p, educ, ε5)
 
-            ########################
-            ########################
+            # ----------------------------------------------------------
 
             if age==65
                 if educ < 22
@@ -87,6 +88,14 @@ function simulateGroup1(p::NamedTuple, N, Emax, weights; Seed=1234, type=1)
 
 
                 if age > 18
+
+                    if x5 == 1
+                        # Flip a coin to decide whether the person exits after 1 year
+                        if rand(rand_number_seed) < p.probability_get_one_year
+                            x5 = 2   # stays for the second year
+                        end
+                    end
+
                     if x5 == 2
                         if educ < 22
                             utility= [u1, u2, u3, u4, -1e20]
