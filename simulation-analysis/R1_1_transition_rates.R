@@ -4,7 +4,9 @@ library(kableExtra)
 
 #= change the directory to where the data is located
 rm(list = ls())
-setwd("C:/Users/ehsa7798/My Drive/Projects/Labor/Github/Compulsory-Service-Structural-Model")
+# setwd("C:/Users/ehsa7798/My Drive/Projects/Labor/Github/Compulsory-Service-Structural-Model")
+setwd("G:/My Drive/Projects/Labor/Github/Compulsory-Service-Structural-Model")
+
 
 LFS <- readRDS("./data/LFS/LFS.rds") %>%
   select(year, season, gender, birth_y, birth_m, age, student, labor, marital, W3, C09, education, person, household, RU, C44, C40MAH, C40SAL, C41, DJAYGOZIN, migreason)
